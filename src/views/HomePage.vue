@@ -6,16 +6,21 @@ import firstActionImage from "../assets/images/home/first-action.png";
 import secondActionImage from "../assets/images/home/second-action.png";
 import thirdActionImage from "../assets/images/home/third-action.png";
 
+const emit = defineEmits<{
+  openCheckPlace: [];
+  openCheckEvent: [];
+}>();
+
 function onActionClick(action: "team" | "checkin" | "progress") {
   console.log(`[home-action] ${action}`);
 }
 
 function onCheckPlaceClick() {
-  console.log("[home-action] check-place");
+  emit("openCheckPlace");
 }
 
 function onCheckEventClick() {
-  console.log("[home-action] check-event");
+  emit("openCheckEvent");
 }
 </script>
 
