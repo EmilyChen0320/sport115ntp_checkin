@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>全障運傳聖火打卡</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script>
+      window.endpoint = {
+        baseURL: "https://api.example.com",
+        uploadImageUrl: "/checkin/upload-image",
+        uploadImagePath: "/checkin/upload-image",
+        uploadStatusUrl: "/checkin/upload-status",
+        authToken: "",
+        timeout: 12000,
+        liffId: "",
+        basicId: "@your-line-basic-id",
+        enableLiff: true,
+        testUserId: "U_TEST_USER_ID",
+        debug: true,
+      };
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
