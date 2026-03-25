@@ -9,3 +9,4 @@ node_modules/.tmp/
 .env.local
 .env.development.local
 .env.*.local
+.env.production

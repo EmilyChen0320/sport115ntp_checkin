@@ -101,7 +101,7 @@ onMounted(() => {
 
       <section class="relative mt-0">
         <img :src="teamCreatedContainer" alt="" class="block w-full" role="presentation" />
-        <div class="absolute inset-0 flex flex-col justify-center px-4 pb-2 pt-6">
+        <div class="absolute inset-0 flex flex-col justify-center px-4 py-2">
           <p class="text-[20px] font-extrabold leading-none text-[#333]">{{ teamName }}</p>
           <p class="mt-2 text-[14px] text-[#333333cc]">隊伍建立日期：{{ createdDate }}</p>
         </div>

@@ -53,3 +53,16 @@ export async function createTeam(payload: CreateTeamPayload): Promise<unknown> {
   });
   return data;
 }
+
+export interface JoinTeamPayload {
+  team_id: string;
+  line_user_id: string;
+}
+
+/** POST /api/check-in/teams/join */
+export async function joinTeam(payload: JoinTeamPayload): Promise<unknown> {
+  const { data } = await apiClient.post("/api/check-in/teams/join", payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return data;
+}

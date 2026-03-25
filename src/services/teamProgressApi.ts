@@ -96,6 +96,14 @@ export function normalizeTeamProgressPayload(payload: TeamProgressApiPayload, fa
     teamBlock.createdDate,
     teamBlock.create_time,
     teamBlock.created_time,
+    // 後端有時會改成「隊伍建立」專用欄位命名
+    teamBlock.team_created_at,
+    teamBlock.teamCreatedAt,
+    teamBlock.team_createdAt,
+    // 或者欄位直接在 root（例如回傳 result 物件即含 team_* 欄位）
+    root.team_created_at,
+    root.teamCreatedAt,
+    root.team_createdAt,
     payload.created_at,
     payload.createdAt,
     root.created_at,
