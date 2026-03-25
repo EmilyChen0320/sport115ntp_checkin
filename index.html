@@ -16,9 +16,9 @@
         timeout: 12000,
         liffId: "%VITE_LIFF_ID%",
         basicId: "@your-line-basic-id",
-        enableLiff: %VITE_ENABLE_LIFF%,
+        enableLiff: "%VITE_ENABLE_LIFF%" === "true",
         testUserId: "Uc019a18693bc8707e2c1c8331eb7a774",
-        debug: %VITE_DEBUG%,
+        debug: "%VITE_DEBUG%" === "true",
         useMockTeamApi: false,
       };
     </script>
