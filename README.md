@@ -51,3 +51,6 @@ npm run build
 2. 把 LIFF 生命週期集中在 `liffService`
 3. 把 API 設定集中在 `apiClient`
 4. UI 分頁與流程下一階段再接入
+
+
+http://localhost:5174/?forceNoTeamPopup=1&after=progress

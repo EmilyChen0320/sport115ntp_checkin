@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const emit = defineEmits<{
-  back: [];
-}>();
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const sections = [
   {
@@ -59,7 +59,7 @@ const sections = [
         type="button"
         aria-label="返回首頁"
         class="absolute left-0 top-1/2 -translate-y-1/2 px-1 text-3xl leading-none"
-        @click="emit('back')"
+        @click="router.push({ name: 'home' })"
       >
         ‹
       </button>

@@ -4,20 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>全障運傳聖火打卡</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
       window.endpoint = {
-        baseURL: "https://api.example.com",
+        // 本地 dev：請留空，讓請求打同源 /api…，由 Vite 轉發（見 .env.development 的 VITE_API_PROXY_TARGET）
+        // 打包上線靜態部署：改為完整 API origin，例如 "https://api.xxx"
+        baseURL: "",
         uploadImageUrl: "/checkin/upload-image",
         uploadImagePath: "/checkin/upload-image",
         uploadStatusUrl: "/checkin/upload-status",
+        // 文件標示 Bearer Auth：請向後端索取 UAT token 填入（勿 commit 真實 token 到公開庫）
         authToken: "",
         timeout: 12000,
-        liffId: "",
+        // LIFF ID（你提供的：2008136985-K9ZROJI0）
+        liffId: "2008136985-K9ZROJI0",
         basicId: "@your-line-basic-id",
         enableLiff: true,
-        testUserId: "U_TEST_USER_ID",
+        // 本地未走 LIFF 時，liffService 會用此值當 line_user_id 打 API
+        testUserId: "Uc019a18693bc8707e2c1c8331eb7a774",
         debug: true,
+        // 連真實 API 時 false；沒填 VITE_API_PROXY_TARGET 或 baseURL 時會請求失敗
+        useMockTeamApi: false,
       };
     </script>
   </head>

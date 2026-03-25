@@ -12,6 +12,8 @@ const defaultConfig: EndpointConfig = {
   enableLiff: true,
   testUserId: "U_TEST_USER_ID",
   debug: false,
+  shareFlexHeroImageUrl: "",
+  useMockTeamApi: false,
 };
 
 export function getEndpointConfig(): EndpointConfig {

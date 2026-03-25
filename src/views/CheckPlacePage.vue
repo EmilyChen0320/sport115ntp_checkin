@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 
-const emit = defineEmits<{
-  back: [];
-}>();
+const router = useRouter();
 
 interface CheckPlaceItem {
   city: string;
@@ -39,7 +38,7 @@ const filteredLocations = computed(() =>
         type="button"
         aria-label="返回首頁"
         class="absolute left-0 top-1/2 -translate-y-1/2 p-1 text-[26px] leading-none"
-        @click="emit('back')"
+        @click="router.push({ name: 'home' })"
       >
         ‹
       </button>
@@ -65,10 +64,9 @@ const filteredLocations = computed(() =>
         <div
           v-for="(row, index) in filteredLocations"
           :key="`${row.storeName}-${index}`"
-          class="grid min-h-[46px] grid-cols-[74px_82px_1fr_1.3fr] items-center border-b border-[#d9dbe1] px-1 text-[14px] leading-[1.2] last:border-b-0"
+          class="grid min-h-[46px] grid-cols-[74px_1fr_1.3fr] items-center border-b border-[#d9dbe1] px-1 text-[14px] leading-[1.2] last:border-b-0"
         >
           <p class="pr-2">{{ row.city }}</p>
-          <p class="pr-2">{{ row.district }}</p>
           <p class="pr-2 underline">{{ row.storeName }}</p>
           <p class="wrap-break-word underline">{{ row.address }}</p>
         </div>

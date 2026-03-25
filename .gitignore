@@ -3,3 +3,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 node_modules/.tmp/
+
+# 本機覆寫（真實後端網址等勿 commit）
+.env.development
+.env.local
+.env.development.local
+.env.*.local
