@@ -17,6 +17,19 @@ const route = useRoute();
 const teamStore = useTeamStore();
 const { teamData } = storeToRefs(teamStore);
 const isCheckingTeam = ref(false);
+const isRouting = ref(false);
+
+async function safePush(to: { name: string; query?: Record<string, string> }) {
+  if (isRouting.value || isCheckingTeam.value) return;
+  isRouting.value = true;
+  try {
+    await router.push(to);
+  } finally {
+    window.setTimeout(() => {
+      isRouting.value = false;
+    }, 180);
+  }
+}
 
 function routeForAfter(after: "checkin" | "progress") {
   return after === "checkin" ? { name: "checkPlace" } : { name: "teamDetail" };
@@ -44,7 +57,7 @@ async function ensureTeamThen(after: "checkin" | "progress") {
 
 function onActionClick(action: "team" | "checkin" | "progress") {
   if (action === "team") {
-    router.push({ name: "createTeam" });
+    void safePush({ name: "createTeam" });
     return;
   }
   if (action === "checkin") {
@@ -55,16 +68,16 @@ function onActionClick(action: "team" | "checkin" | "progress") {
 }
 
 function onCheckPlaceClick() {
-  router.push({ name: "checkPlace" });
+  void safePush({ name: "checkPlace" });
 }
 
 function onCheckEventClick() {
-  router.push({ name: "checkEvent" });
+  void safePush({ name: "checkEvent" });
 }
 
 function goCreateTeamFromPopup() {
   showNoTeamPopup.value = false;
-  router.push({
+  void safePush({
     name: "createTeam",
     query: { after: popupAfter.value },
   });
@@ -86,7 +99,8 @@ onMounted(() => {
       <button
         type="button"
         aria-label="查看活動辦法"
-        class="absolute right-8 top-[132px] block w-[160px] max-w-[49%] rounded-full transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="tap-feedback absolute right-8 top-[132px] block w-[160px] max-w-[49%] rounded-full disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        :disabled="isRouting || isCheckingTeam"
         @click="onCheckEventClick"
       >
         <img :src="checkEventImage" alt="查看活動辦法" class="block h-auto w-full" />
@@ -94,7 +108,8 @@ onMounted(() => {
       <button
         type="button"
         aria-label="查看可打卡地點"
-        class="absolute right-5 bottom-2 block w-[160px] max-w-[49%] rounded-full transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="tap-feedback absolute right-5 bottom-2 block w-[160px] max-w-[49%] rounded-full disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        :disabled="isRouting || isCheckingTeam"
         @click="onCheckPlaceClick"
       >
         <img :src="checkPlaceImage" alt="查看可打卡地點" class="block h-auto w-full" />
@@ -104,7 +119,8 @@ onMounted(() => {
     <section class="px-4 pt-[14px] pb-6">
       <button
         type="button"
-        class="block w-full rounded-3xl transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="tap-feedback block w-full rounded-3xl disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        :disabled="isRouting || isCheckingTeam"
         @click="onActionClick('team')"
       >
         <img
@@ -117,7 +133,8 @@ onMounted(() => {
       <div class="mt-3 grid grid-cols-2 gap-3">
         <button
           type="button"
-          class="block rounded-3xl transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+          class="tap-feedback block rounded-3xl disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+          :disabled="isRouting || isCheckingTeam"
           @click="onActionClick('checkin')"
         >
           <img
@@ -129,7 +146,8 @@ onMounted(() => {
 
         <button
           type="button"
-          class="block rounded-3xl transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+          class="tap-feedback block rounded-3xl disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+          :disabled="isRouting || isCheckingTeam"
           @click="onActionClick('progress')"
         >
           <img
@@ -139,6 +157,7 @@ onMounted(() => {
           />
         </button>
       </div>
+      <p v-if="isCheckingTeam" class="mt-3 text-center text-[12px] text-[#674598]">處理中，請稍候…</p>
     </section>
   </main>
 
@@ -153,7 +172,8 @@ onMounted(() => {
       <button
         type="button"
         aria-label="關閉"
-        class="absolute right-4 top-4 h-7 w-7 rounded-full text-[22px] leading-none text-[#777] transition duration-100 ease-out active:scale-[0.95] active:opacity-80 hover:bg-[#f3f3f3]"
+        class="tap-feedback absolute right-4 top-4 h-7 w-7 rounded-full text-[22px] leading-none text-[#777] hover:bg-[#f3f3f3]"
+        :disabled="isRouting || isCheckingTeam"
         @click="showNoTeamPopup = false"
       >
         ×
@@ -172,14 +192,16 @@ onMounted(() => {
       <div class="mt-6 flex gap-4">
         <button
           type="button"
-          class="flex-1 rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-2.5 text-[16px] font-bold text-white transition duration-100 ease-out active:scale-[0.98] active:opacity-90"
+          class="tap-feedback flex-1 rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-2.5 text-[16px] font-bold text-white disabled:opacity-55"
+          :disabled="isRouting || isCheckingTeam"
           @click="goCreateTeamFromPopup"
         >
           立即組隊
         </button>
         <button
           type="button"
-          class="flex-1 rounded-full bg-[#e0e0e0] py-2.5 text-[16px] font-bold text-[#7a7a7a] transition duration-100 ease-out active:scale-[0.98] active:opacity-90"
+          class="tap-feedback flex-1 rounded-full bg-[#e0e0e0] py-2.5 text-[16px] font-bold text-[#7a7a7a] disabled:opacity-55"
+          :disabled="isRouting || isCheckingTeam"
           @click="showNoTeamPopup = false"
         >
           稍後再說
@@ -188,3 +210,16 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.tap-feedback {
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.tap-feedback:active {
+  transform: scale(0.96);
+  opacity: 0.72;
+}
+</style>

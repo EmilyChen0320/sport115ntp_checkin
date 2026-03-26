@@ -7,6 +7,8 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
+      const isLocalhost =
+        location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "::1";
       window.endpoint = {
         baseURL: "https://line.uat.sport115ntp.aitago.tw",
         uploadImageUrl: "/checkin/upload-image",
@@ -16,7 +18,7 @@
         timeout: 12000,
         liffId: "2009341891-zRQCHpaI",
         basicId: "@209efrls",
-        enableLiff: true,
+        enableLiff: !isLocalhost,
         testUserId: "Uc019a18693bc8707e2c1c8331eb7a774",
         debug: false,
         useMockTeamApi: false,

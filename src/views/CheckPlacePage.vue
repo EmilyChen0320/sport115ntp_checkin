@@ -67,7 +67,14 @@ onMounted(() => {
           <option v-if="!cities.length" value="">{{ isLoading ? "載入中..." : "尚無資料" }}</option>
           <option v-for="item in cities" :key="item" :value="item">{{ item }}</option>
         </select>
-        <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-[#7b7f88]">⌄</span>
+        <svg
+          class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7b7f88]"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </div>
     </section>
 
