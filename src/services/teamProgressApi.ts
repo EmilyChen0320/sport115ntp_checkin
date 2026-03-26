@@ -15,6 +15,15 @@ function pickString(...values: unknown[]): string {
   return "";
 }
 
+/** 後端常回傳數字型 team_id；需與字串一併支援，否則正規化後 teamId 為空會讓邀請按鈕永遠 disabled */
+function pickIdLikeString(...values: unknown[]): string {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(Math.trunc(v));
+  }
+  return "";
+}
+
 function pickNumber(...values: unknown[]): number {
   for (const v of values) {
     if (typeof v === "number" && !Number.isNaN(v)) return Math.max(0, Math.round(v));
@@ -64,7 +73,7 @@ export function normalizeTeamProgressPayload(payload: TeamProgressApiPayload, fa
     asRecord(root.group) ??
     root;
 
-  const teamId = pickString(
+  const teamId = pickIdLikeString(
     teamBlock.team_id,
     teamBlock.teamId,
     teamBlock.id,
