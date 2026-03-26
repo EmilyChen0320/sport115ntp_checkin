@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { getTeamProgress, joinTeam } from "../services/apiClient";
 import { liffService } from "../services/liffService";
 import joinTeamHero from "../assets/images/join-team.png";
+import teamInviteBg from "../assets/images/teaminvitebg.png";
 import avatarFallback from "../assets/images/avatar.png";
 import type { TeamProgressView } from "../types/teamProgress";
 
@@ -157,7 +158,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="mx-auto min-h-screen w-full max-w-[393px] bg-[#f5f1f7] px-4 pt-[max(12px,env(safe-area-inset-top))] pb-8 text-[#333]">
+  <main
+    class="mx-auto min-h-screen w-full max-w-[393px] bg-cover bg-top bg-no-repeat px-4 pt-[max(12px,env(safe-area-inset-top))] pb-8 text-[#333]"
+    :style="{ backgroundImage: `url(${teamInviteBg})`, backgroundColor: '#f5f1f7' }"
+  >
     <header class="relative flex items-center justify-center py-2">
       <button
         type="button"
@@ -172,7 +176,7 @@ onMounted(() => {
 
     <div
       v-if="pageError"
-      class="mt-4 rounded-2xl bg-[#ffe8e8] px-4 py-4 text-[13px] text-[#a40000] shadow-[0_0_0_1px_rgba(0,0,0,0.03)]"
+      class="mt-4 rounded-2xl border border-[#f0d7dc] bg-white px-4 py-4 text-[13px] text-[#a40000] shadow-[0_0_0_1px_rgba(0,0,0,0.03)]"
     >
       <p>{{ pageError }}</p>
       <div class="mt-4 flex flex-col gap-2">
@@ -258,7 +262,7 @@ onMounted(() => {
       <div class="rounded-2xl bg-white p-4 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
         <p
           v-if="joinSubmitError"
-          class="mb-3 rounded-lg bg-[#ffe8e8] px-3 py-2 text-[12px] text-[#a40000]"
+          class="mb-3 rounded-lg border border-[#f0d7dc] bg-white px-3 py-2 text-[12px] text-[#a40000]"
         >
           {{ joinSubmitError }}
         </p>

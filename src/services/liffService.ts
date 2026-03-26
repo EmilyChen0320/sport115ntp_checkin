@@ -14,7 +14,7 @@ class LiffService {
   private initialized = false;
   private liffIdMissingNotified = false;
   private canUseTestUserFallback(cfg: ReturnType<typeof getEndpointConfig>): boolean {
-    return import.meta.env.DEV || Boolean(cfg.useMockTeamApi) || !cfg.enableLiff;
+    return import.meta.env.DEV || Boolean(cfg.useMockTeamApi);
   }
 
   async init(): Promise<void> {
@@ -63,6 +63,9 @@ class LiffService {
     const cfg = getEndpointConfig();
     if (this.canUseTestUserFallback(cfg)) {
       return { userId: cfg.testUserId };
+    }
+    if (!cfg.enableLiff) {
+      throw new Error("LIFF 未啟用，正式環境不可使用固定測試 userId。");
     }
 
     await this.init();
