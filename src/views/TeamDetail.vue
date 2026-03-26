@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import teamCreatedHero from "../assets/images/teamcreatedheroimage.png";
@@ -10,6 +10,9 @@ import { liffService } from "../services/liffService";
 const router = useRouter();
 const teamStore = useTeamStore();
 const { teamData, isLoading, lastError } = storeToRefs(teamStore);
+
+/** 載入頁面時快取，避免「邀請」點擊時 await 打斷 user gesture（iOS/LINE 會導致 shareTargetPicker 失敗） */
+const myLineUserId = ref("");
 
 const teamName = computed(() => teamData.value?.teamName ?? "");
 const createdDate = computed(() => teamData.value?.createdDate ?? "");
@@ -28,10 +31,11 @@ const memberRatioLabel = computed(() => {
 
 const showUnderFiveHint = computed(() => members.value.length < 5);
 
-const canInvite = computed(() => Boolean(teamData.value?.teamId));
+const canInvite = computed(() => Boolean(teamData.value?.teamId && myLineUserId.value));
 
 async function loadTeam() {
   const lineUserId = await liffService.getUserId();
+  myLineUserId.value = lineUserId;
   await teamStore.fetchTeamProgress(lineUserId);
 }
 
@@ -43,15 +47,15 @@ function openMapProgress() {
   router.push({ name: "checkPlace" });
 }
 
-async function onInviteClick() {
-  if (!teamData.value?.teamId) return;
-  const inviterId = await liffService.getUserId();
-  await liffService.inviteTeamMemberViaTextShareTargetPicker({
+/** 不可在此 await API：須在點擊同一個同步流程內呼叫 shareTargetPicker */
+function onInviteClick() {
+  if (!teamData.value?.teamId || !myLineUserId.value) return;
+  liffService.inviteTeamMemberViaTextShareTargetPicker({
     teamId: teamData.value.teamId,
     teamName: teamData.value.teamName,
     memberCount: members.value.length,
     maxMembers: 5,
-    inviterId,
+    inviterId: myLineUserId.value,
   });
 }
 

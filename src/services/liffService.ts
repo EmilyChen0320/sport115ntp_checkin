@@ -8,6 +8,8 @@ export interface LiffUserProfile {
   statusMessage?: string;
 }
 
+type WebShareResult = "shared" | "aborted" | "unavailable";
+
 class LiffService {
   private initialized = false;
   private liffIdMissingNotified = false;
@@ -86,34 +88,52 @@ class LiffService {
   }
 
   /**
-   * 邀請隊員（純文字）：在 LINE 內建瀏覽器盡量走 shareTargetPicker；
-   * 本機或非 LINE 環境改為複製文字並提示。
+   * 邀請隊員（純文字）：LINE 內優先 shareTargetPicker。
+   * 注意：呼叫端請勿在 click 內先 await 其他 API，否則 iOS 可能拒絕開啟分享介面。
    */
-  async inviteTeamMemberViaShareTargetPicker(options: {
+  inviteTeamMemberViaShareTargetPicker(options: {
     teamId: string;
     teamName: string;
     memberCount: number;
     maxMembers?: number;
-    /** 邀請者（隊長）的 LINE user id，讓受邀者可透過 progress API 取得隊伍資訊 */
     inviterId: string;
-  }): Promise<void> {
-    await this.inviteTeamMemberViaTextShareTargetPicker(options);
+  }): void {
+    this.inviteTeamMemberViaTextShareTargetPicker(options);
+  }
+
+  /** 系統分享表（可選 LINE），作為 shareTargetPicker 失敗時的備援 */
+  private async tryWebShare(messageText: string, joinUrl: string): Promise<WebShareResult> {
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return "unavailable";
+    }
+    try {
+      await navigator.share({
+        title: "加入隊伍邀請",
+        text: messageText,
+        ...(joinUrl ? { url: joinUrl } : {}),
+      });
+      return "shared";
+    } catch (e) {
+      const name = e instanceof Error ? e.name : "";
+      if (name === "AbortError") return "aborted";
+      return "unavailable";
+    }
   }
 
   private async fallbackCopyInviteText(messageText: string, joinUrl: string, debug: boolean): Promise<void> {
     try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(messageText);
       }
     } catch {
-      /* 略過，改以下方 alert 人工複製 */
+      /* ignore */
     }
     const hint =
       (typeof navigator !== "undefined" && navigator.clipboard
         ? "已將邀請文字複製到剪貼簿，請貼到 LINE 傳給好友。\n\n"
-        : "請手動複製控制台（Console）內顯示的邀請文字。\n\n") +
+        : "無法自動複製，請長按下方連結手動複製。\n\n") +
       (joinUrl ? `加入連結：\n${joinUrl}\n\n` : "") +
-      "若在 LINE 內仍無法跳出「傳送給好友」，請至 LINE Developers 確認此 LIFF 可使用 Share Target Picker，並請勿用系統瀏覽器直接開網頁（需從 LINE 開啟 LIFF）。";
+      "若仍無法分享：請至 LINE Developers 為此 LIFF 加上「share_message」等分享所需權限（Share Target Picker）。";
     if (typeof window !== "undefined") {
       window.alert(hint);
     }
@@ -122,18 +142,81 @@ class LiffService {
     }
   }
 
-  async inviteTeamMemberViaTextShareTargetPicker(options: {
+  /** 使用者關閉選人視窗或未送出時，LINE 常會 reject；不應再跳備援 alert */
+  private isSharePickerClosedByUser(error: unknown): boolean {
+    const o = error as { code?: string; message?: string };
+    const code = String(o?.code ?? "").toUpperCase();
+    if (code === "CANCEL" || code.includes("CANCEL")) return true;
+    const msg = String(o?.message ?? (error instanceof Error ? error.message : error) ?? "").toLowerCase();
+    return (
+      msg.includes("cancel") ||
+      msg.includes("canceled") ||
+      msg.includes("cancelled") ||
+      msg.includes("closed") ||
+      msg.includes("user deny") ||
+      msg.includes("popup closed")
+    );
+  }
+
+  private async afterSharePickerFailed(
+    messageText: string,
+    joinUrl: string,
+    debug: boolean,
+    error: unknown,
+  ): Promise<void> {
+    if (debug) {
+      console.error("[LIFF shareTargetPicker:text]", error);
+    }
+    if (this.isSharePickerClosedByUser(error)) {
+      return;
+    }
+
+    const ws = await this.tryWebShare(messageText, joinUrl);
+    if (ws === "shared" || ws === "aborted") {
+      return;
+    }
+
+    await this.fallbackCopyInviteText(messageText, joinUrl, debug);
+  }
+
+  private async whenNoSharePicker(
+    messageText: string,
+    joinUrl: string,
+    endpoint: ReturnType<typeof getEndpointConfig>,
+    inLineClient: boolean,
+  ): Promise<void> {
+    console.info("[LIFF] 無法使用 shareTargetPicker，原因可能為未在 LINE 內開啟或 LIFF 尚未 init", {
+      messageText,
+      joinUrl,
+      inLineClient,
+      initialized: this.initialized,
+    });
+
+    const quietDev = import.meta.env.DEV && !inLineClient;
+    if (quietDev) {
+      return;
+    }
+
+    const ws = await this.tryWebShare(messageText, joinUrl);
+    if (ws === "shared" || ws === "aborted") {
+      return;
+    }
+
+    await this.fallbackCopyInviteText(messageText, joinUrl, endpoint.debug);
+  }
+
+  /**
+   * 同步呼叫 shareTargetPicker（不 await init / 不 await 其他前置），以符合行動裝置 user gesture 限制。
+   * App 載入時應已由 ensureLogin 完成 liff.init。
+   */
+  inviteTeamMemberViaTextShareTargetPicker(options: {
     teamId: string;
     teamName: string;
     memberCount: number;
     maxMembers?: number;
-    /** 邀請者（隊長）的 LINE user id */
     inviterId: string;
-  }): Promise<void> {
+  }): void {
     const endpoint = getEndpointConfig();
-    if (endpoint.enableLiff && (endpoint.liffId?.trim() ?? "")) {
-      await this.init();
-    }
 
     const maxMembers = options.maxMembers ?? 5;
     const memberLabel = `目前人數：${options.memberCount}/${maxMembers}`;
@@ -155,33 +238,21 @@ class LiffService {
       inLineClient = false;
     }
 
-    /** 勿只靠 isApiAvailable：部分 LINE 版本會誤判 false，導致永遠不走 shareTargetPicker */
     const shouldTrySharePicker =
       endpoint.enableLiff && this.initialized && inLineClient && Boolean(liffId);
 
     if (!shouldTrySharePicker) {
-      console.info("[LIFF mock shareTargetPicker] 非 LINE 內建瀏覽器或未初始化 LIFF，將送出的文字：", {
-        messageText,
-        joinUrl,
-        inLineClient,
-        initialized: this.initialized,
-      });
-      /** 本機 chrome 開發：不洗版 alert；正式站若用外開瀏覽器則提示複製 */
-      const quietDev = import.meta.env.DEV && !inLineClient;
-      if (!quietDev) {
-        await this.fallbackCopyInviteText(messageText, joinUrl, endpoint.debug);
-      }
+      void this.whenNoSharePicker(messageText, joinUrl, endpoint, inLineClient);
       return;
     }
 
     try {
-      await liff.shareTargetPicker([{ type: "text", text: messageText } as any]);
+      const pickerPromise = liff.shareTargetPicker([{ type: "text", text: messageText } as any]);
+      void pickerPromise.catch((error: unknown) =>
+        this.afterSharePickerFailed(messageText, joinUrl, endpoint.debug, error),
+      );
     } catch (error) {
-      if (endpoint.debug) {
-        console.error("[LIFF shareTargetPicker:text]", error);
-      }
-      console.info("[LIFF] shareTargetPicker 失敗或使用者取消，改為 fallback", { messageText, joinUrl });
-      await this.fallbackCopyInviteText(messageText, joinUrl, endpoint.debug);
+      void this.afterSharePickerFailed(messageText, joinUrl, endpoint.debug, error);
     }
   }
 }
