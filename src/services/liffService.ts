@@ -101,16 +101,21 @@ class LiffService {
     this.inviteTeamMemberViaTextShareTargetPicker(options);
   }
 
-  /** 系統分享表（可選 LINE），作為 shareTargetPicker 失敗時的備援 */
-  private async tryWebShare(messageText: string, joinUrl: string): Promise<WebShareResult> {
+  /**
+   * 系統分享表（可選 LINE）。`text` 不可含網址，否則與 `url` 並列時會出現兩條相同連結。
+   */
+  private async tryWebShare(inviteLinesWithoutUrl: string, joinUrl: string): Promise<WebShareResult> {
     if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return "unavailable";
+    }
+    if (!joinUrl.trim()) {
       return "unavailable";
     }
     try {
       await navigator.share({
         title: "加入隊伍邀請",
-        text: messageText,
-        ...(joinUrl ? { url: joinUrl } : {}),
+        text: `${inviteLinesWithoutUrl}\n請點選下方連結加入隊伍。`,
+        url: joinUrl,
       });
       return "shared";
     } catch (e) {
@@ -159,6 +164,7 @@ class LiffService {
   }
 
   private async afterSharePickerFailed(
+    inviteLinesOnly: string,
     messageText: string,
     joinUrl: string,
     debug: boolean,
@@ -171,7 +177,7 @@ class LiffService {
       return;
     }
 
-    const ws = await this.tryWebShare(messageText, joinUrl);
+    const ws = await this.tryWebShare(inviteLinesOnly, joinUrl);
     if (ws === "shared" || ws === "aborted") {
       return;
     }
@@ -180,6 +186,7 @@ class LiffService {
   }
 
   private async whenNoSharePicker(
+    inviteLinesOnly: string,
     messageText: string,
     joinUrl: string,
     endpoint: ReturnType<typeof getEndpointConfig>,
@@ -197,7 +204,7 @@ class LiffService {
       return;
     }
 
-    const ws = await this.tryWebShare(messageText, joinUrl);
+    const ws = await this.tryWebShare(inviteLinesOnly, joinUrl);
     if (ws === "shared" || ws === "aborted") {
       return;
     }
@@ -229,7 +236,9 @@ class LiffService {
         )}&inviter_id=${inviterEncoded}`
       : "";
 
-    const messageText = `【${options.teamName}】邀請你加入隊伍\n${memberLabel}\n加入連結：${joinUrl}`;
+    /** 不含網址：給 Web Share 用，避免 text 與 url 重複顯示同一連結 */
+    const inviteLinesOnly = `【${options.teamName}】邀請你加入隊伍\n${memberLabel}`;
+    const messageText = joinUrl ? `${inviteLinesOnly}\n加入連結：${joinUrl}` : inviteLinesOnly;
 
     let inLineClient = false;
     try {
@@ -242,17 +251,17 @@ class LiffService {
       endpoint.enableLiff && this.initialized && inLineClient && Boolean(liffId);
 
     if (!shouldTrySharePicker) {
-      void this.whenNoSharePicker(messageText, joinUrl, endpoint, inLineClient);
+      void this.whenNoSharePicker(inviteLinesOnly, messageText, joinUrl, endpoint, inLineClient);
       return;
     }
 
     try {
       const pickerPromise = liff.shareTargetPicker([{ type: "text", text: messageText } as any]);
       void pickerPromise.catch((error: unknown) =>
-        this.afterSharePickerFailed(messageText, joinUrl, endpoint.debug, error),
+        this.afterSharePickerFailed(inviteLinesOnly, messageText, joinUrl, endpoint.debug, error),
       );
     } catch (error) {
-      void this.afterSharePickerFailed(messageText, joinUrl, endpoint.debug, error);
+      void this.afterSharePickerFailed(inviteLinesOnly, messageText, joinUrl, endpoint.debug, error);
     }
   }
 }
