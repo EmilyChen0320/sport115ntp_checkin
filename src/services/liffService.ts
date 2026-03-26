@@ -64,18 +64,16 @@ class LiffService {
     if (this.canUseTestUserFallback(cfg)) {
       return { userId: cfg.testUserId };
     }
-    if (!cfg.enableLiff) {
-      throw new Error("LIFF 未啟用，正式環境不可使用固定測試 userId。");
-    }
 
     await this.init();
 
-    if (!(cfg.liffId?.trim() ?? "")) {
-      throw new Error("LIFF_ID 未設定，無法取得 LINE 使用者身分。");
+    if (!this.initialized) {
+      throw new Error("LIFF 初始化失敗，無法取得 LINE 使用者身分。請從 LINE 開啟此頁面。");
     }
 
     if (!liff.isLoggedIn()) {
-      throw new Error("尚未完成 LINE 登入，無法取得 LINE 使用者身分。");
+      liff.login();
+      throw new Error("尚未完成 LINE 登入，正在導向登入頁面…");
     }
 
     const profile = await liff.getProfile();
