@@ -13,6 +13,9 @@ type WebShareResult = "shared" | "aborted" | "unavailable";
 class LiffService {
   private initialized = false;
   private liffIdMissingNotified = false;
+  private canUseTestUserFallback(cfg: ReturnType<typeof getEndpointConfig>): boolean {
+    return import.meta.env.DEV || Boolean(cfg.useMockTeamApi) || !cfg.enableLiff;
+  }
 
   async init(): Promise<void> {
     const cfg = getEndpointConfig();
@@ -58,18 +61,18 @@ class LiffService {
 
   async getUserProfile(): Promise<LiffUserProfile> {
     const cfg = getEndpointConfig();
-    if (!cfg.enableLiff) {
+    if (this.canUseTestUserFallback(cfg)) {
       return { userId: cfg.testUserId };
     }
 
     await this.init();
 
     if (!(cfg.liffId?.trim() ?? "")) {
-      return { userId: cfg.testUserId };
+      throw new Error("LIFF_ID 未設定，無法取得 LINE 使用者身分。");
     }
 
     if (!liff.isLoggedIn()) {
-      return { userId: cfg.testUserId };
+      throw new Error("尚未完成 LINE 登入，無法取得 LINE 使用者身分。");
     }
 
     const profile = await liff.getProfile();
@@ -84,7 +87,9 @@ class LiffService {
   async getUserId(): Promise<string> {
     const cfg = getEndpointConfig();
     const profile = await this.getUserProfile();
-    return profile.userId || cfg.testUserId;
+    if (profile.userId?.trim()) return profile.userId.trim();
+    if (this.canUseTestUserFallback(cfg)) return cfg.testUserId;
+    throw new Error("LIFF 未回傳有效 userId，請重新開啟 LIFF 後再試。");
   }
 
   /**
