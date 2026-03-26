@@ -98,7 +98,6 @@ onMounted(() => {
       >
         前往我要組隊
       </button>
-      <p class="mt-3 text-center text-[11px] text-[#888]">組隊頁路徑為 <span class="font-mono">/create-team</span></p>
     </div>
 
     <template v-else-if="teamData">
