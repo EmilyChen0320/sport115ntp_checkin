@@ -88,6 +88,8 @@ class LiffService {
     teamName: string;
     memberCount: number;
     maxMembers?: number;
+    /** 邀請者（隊長）的 LINE user id，讓受邀者可透過 progress API 取得隊伍資訊 */
+    inviterId: string;
   }): Promise<void> {
     await this.inviteTeamMemberViaTextShareTargetPicker(options);
   }
@@ -97,6 +99,8 @@ class LiffService {
     teamName: string;
     memberCount: number;
     maxMembers?: number;
+    /** 邀請者（隊長）的 LINE user id */
+    inviterId: string;
   }): Promise<void> {
     const endpoint = getEndpointConfig();
     if (endpoint.enableLiff && endpoint.liffId) {
@@ -107,8 +111,11 @@ class LiffService {
     const memberLabel = `目前人數：${options.memberCount}/${maxMembers}`;
 
     const liffId = endpoint.liffId?.trim() || "";
+    const inviterEncoded = encodeURIComponent(options.inviterId);
     const joinUrl = liffId
-      ? `https://liff.line.me/${liffId}?path=/team/join&team_id=${encodeURIComponent(options.teamId)}`
+      ? `https://liff.line.me/${liffId}?path=/team/join&team_id=${encodeURIComponent(
+          options.teamId,
+        )}&inviter_id=${inviterEncoded}`
       : "";
 
     const messageText = `【${options.teamName}】邀請你加入隊伍\n${memberLabel}\n加入連結：${joinUrl}`;

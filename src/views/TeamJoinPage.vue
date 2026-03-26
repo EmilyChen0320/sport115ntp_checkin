@@ -2,35 +2,42 @@
 import { computed, onMounted, ref } from "vue";
 import type { AxiosError } from "axios";
 import { useRoute, useRouter } from "vue-router";
-import { joinTeam } from "../services/apiClient";
+import { getTeamProgress, joinTeam } from "../services/apiClient";
 import { liffService } from "../services/liffService";
-import { useTeamStore } from "../stores/teamStore";
-import { storeToRefs } from "pinia";
 import joinTeamHero from "../assets/images/join-team.png";
+import avatarFallback from "../assets/images/avatar.png";
+import type { TeamProgressView } from "../types/teamProgress";
 
 const route = useRoute();
 const router = useRouter();
 
-const teamStore = useTeamStore();
-const { teamData } = storeToRefs(teamStore);
-
-const teamId = computed(() => {
-  const q = route.query.team_id;
-  return typeof q === "string" ? q : Array.isArray(q) ? q[0] ?? "" : "";
-});
-
-const isJoining = ref(false);
-const joinError = ref("");
-const isJoined = ref(false);
-const agreeChecked = ref(false);
-
 const MAX_MEMBERS = 5;
 
-const isAlreadyInAnotherTeam = computed(() => joinError.value.includes("已加入其他隊伍"));
+function singleQuery(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0].trim();
+  return "";
+}
 
-const members = computed(() => teamData.value?.members ?? []);
-const teamName = computed(() => teamData.value?.teamName ?? "");
-const createdDate = computed(() => teamData.value?.createdDate ?? "");
+const teamId = computed(() => singleQuery(route.query.team_id));
+const inviterId = computed(() => singleQuery(route.query.inviter_id));
+
+const isLoadingPage = ref(true);
+const pageError = ref("");
+const pageErrorKind = ref<"already_team" | "other" | "">("");
+
+/** 以邀請者 progress API 取得的隊伍資料（顯示用） */
+const inviteTeamData = ref<TeamProgressView | null>(null);
+
+const agreeChecked = ref(false);
+const isJoining = ref(false);
+const joinSubmitError = ref("");
+
+const selfLineUserId = ref("");
+
+const members = computed(() => inviteTeamData.value?.members ?? []);
+const teamName = computed(() => inviteTeamData.value?.teamName ?? "");
+const createdDate = computed(() => inviteTeamData.value?.createdDate ?? "");
 const leaderName = computed(() => {
   return members.value.find((m) => m.isCaptain)?.name ?? members.value[0]?.name ?? "";
 });
@@ -38,37 +45,80 @@ const teamIconUrl = computed(() => {
   return (
     members.value.find((m) => m.isCaptain)?.avatarUrl ??
     members.value[0]?.avatarUrl ??
-    ""
+    (avatarFallback as string)
   );
 });
 const inviterName = computed(() => leaderName.value || "朋友");
 
-async function joinTeamFlow() {
-  joinError.value = "";
-  isJoined.value = false;
+const emptySlotCount = computed(() => Math.max(0, MAX_MEMBERS - members.value.length));
+
+function sameTeamId(a: string, b: string): boolean {
+  return String(a).trim() === String(b).trim();
+}
+
+async function loadInvitePage() {
+  pageError.value = "";
+  pageErrorKind.value = "";
+  inviteTeamData.value = null;
   agreeChecked.value = false;
-  if (!teamId.value) {
-    joinError.value = "連結缺少 team_id 參數。";
+  joinSubmitError.value = "";
+  isLoadingPage.value = true;
+
+  if (!teamId.value || !inviterId.value) {
+    pageError.value = "邀請連結缺少必要參數，請向隊長重新索取連結。";
+    pageErrorKind.value = "other";
+    isLoadingPage.value = false;
     return;
   }
 
   try {
-    isJoining.value = true;
-    // 確保 LIFF 環境有登入，才能拿到正確 line_user_id
     await liffService.ensureLogin();
     const lineUserId = await liffService.getUserId();
-    await joinTeam({ team_id: teamId.value, line_user_id: lineUserId });
-    // 進入加入成功畫面後，直接拉取隊伍資料（隊名/建立日期/隊員頭像）
-    await teamStore.fetchTeamProgress(lineUserId);
-    isJoined.value = true;
+    selfLineUserId.value = lineUserId;
+
+    const selfTeam = await getTeamProgress(lineUserId);
+    if (selfTeam) {
+      if (sameTeamId(selfTeam.teamId, teamId.value)) {
+        pageError.value = "您已是此隊伍成員。";
+        pageErrorKind.value = "already_team";
+        isLoadingPage.value = false;
+        return;
+      }
+      pageError.value = "您已加入其他隊伍，無法透過此連結再加入新隊伍。";
+      pageErrorKind.value = "already_team";
+      isLoadingPage.value = false;
+      return;
+    }
+
+    const inviterTeam = await getTeamProgress(inviterId.value);
+    if (!inviterTeam) {
+      pageError.value = "無法讀取邀請隊伍資料，連結可能已失效，請向隊長重新索取。";
+      pageErrorKind.value = "other";
+      isLoadingPage.value = false;
+      return;
+    }
+
+    if (!sameTeamId(inviterTeam.teamId, teamId.value)) {
+      pageError.value = "邀請連結與隊伍資訊不符，請向隊長重新索取有效連結。";
+      pageErrorKind.value = "other";
+      isLoadingPage.value = false;
+      return;
+    }
+
+    if (inviterTeam.members.length >= MAX_MEMBERS) {
+      pageError.value = "此隊伍人數已滿，無法再加入。";
+      pageErrorKind.value = "other";
+      isLoadingPage.value = false;
+      return;
+    }
+
+    inviteTeamData.value = inviterTeam;
   } catch (e) {
-    isJoined.value = false;
-    const apiError = e as AxiosError<{ message?: string }>;
-    joinError.value =
-      apiError.response?.data?.message ||
-      (e instanceof Error ? e.message : "加入隊伍失敗");
+    pageError.value =
+      e instanceof Error ? e.message : "載入邀請資訊失敗，請稍後再試或檢查網路連線。";
+    pageErrorKind.value = "other";
   } finally {
-    isJoining.value = false;
+    isLoadingPage.value = false;
   }
 }
 
@@ -84,14 +134,25 @@ function joinLater() {
   router.push({ name: "home" });
 }
 
-function confirmJoin() {
-  if (!agreeChecked.value) return;
-  // 目前後端加入已完成；確認加入後先帶去打卡地點頁（如需改成其他頁再調）
-  router.push({ name: "checkPlace" });
+async function confirmJoin() {
+  if (!agreeChecked.value || !teamId.value || !selfLineUserId.value) return;
+  joinSubmitError.value = "";
+  try {
+    isJoining.value = true;
+    await joinTeam({ team_id: teamId.value, line_user_id: selfLineUserId.value });
+    router.push({ name: "home" });
+  } catch (e) {
+    const apiError = e as AxiosError<{ message?: string }>;
+    joinSubmitError.value =
+      apiError.response?.data?.message ||
+      (e instanceof Error ? e.message : "加入隊伍失敗，請稍後再試。");
+  } finally {
+    isJoining.value = false;
+  }
 }
 
 onMounted(() => {
-  void joinTeamFlow();
+  void loadInvitePage();
 });
 </script>
 
@@ -100,59 +161,67 @@ onMounted(() => {
     <header class="relative flex items-center justify-center py-2">
       <button
         type="button"
-        aria-label="返回首頁"
+        aria-label="關閉並回首頁"
         class="absolute left-0 top-1/2 -translate-y-1/2 p-1 text-[28px] leading-none text-[#333]"
         @click="goHome"
       >
-        ‹
+        ×
       </button>
       <h1 class="text-[28px] font-extrabold leading-none tracking-tight text-[#222]">加入隊伍</h1>
     </header>
 
     <div
-      v-if="joinError"
+      v-if="pageError"
       class="mt-4 rounded-2xl bg-[#ffe8e8] px-4 py-4 text-[13px] text-[#a40000] shadow-[0_0_0_1px_rgba(0,0,0,0.03)]"
     >
-      <p>{{ joinError }}</p>
-      <button
-        v-if="isAlreadyInAnotherTeam"
-        type="button"
-        class="mt-4 w-full rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-3 text-[15px] font-bold text-white"
-        @click="goToMyTeam"
-      >
-        前往我的隊伍
-      </button>
+      <p>{{ pageError }}</p>
+      <div class="mt-4 flex flex-col gap-2">
+        <button
+          type="button"
+          class="w-full rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-3 text-[15px] font-bold text-white"
+          @click="goHome"
+        >
+          回首頁
+        </button>
+        <button
+          v-if="pageErrorKind === 'already_team'"
+          type="button"
+          class="w-full rounded-full border border-[#674598] py-3 text-[15px] font-bold text-[#674598]"
+          @click="goToMyTeam"
+        >
+          前往我的隊伍
+        </button>
+      </div>
     </div>
 
-    <div v-else-if="isJoining" class="mt-4 rounded-2xl bg-white p-4 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
-      <p class="text-[16px] font-bold text-[#222]">加入隊伍中…</p>
+    <div v-else-if="isLoadingPage" class="mt-4 rounded-2xl bg-white p-4 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+      <p class="text-[16px] font-bold text-[#222]">載入邀請資訊中…</p>
       <p class="mt-2 text-[13px] text-[#666]">請稍候</p>
     </div>
 
-    <section v-else-if="isJoined" class="mt-4 space-y-4">
+    <section v-else-if="inviteTeamData" class="mt-4 space-y-4">
       <!-- 邀請卡 -->
       <div class="flex items-center justify-between rounded-2xl bg-[#efe7ff] px-4 py-4 shadow-[0_0_0_1px_rgba(0,0,0,0.05)]">
-        <div>
+        <div class="min-w-0 flex-1 pr-2">
           <p class="text-[16px] font-extrabold text-[#222]">您收到組隊邀請！</p>
           <p class="mt-1 text-[13px] text-[#444]">來自好友「{{ inviterName }}」的邀請</p>
         </div>
-        <img :src="joinTeamHero" alt="" class="h-[88px] w-[88px] object-contain" />
+        <img :src="joinTeamHero" alt="" class="h-[88px] w-[88px] shrink-0 object-contain" />
       </div>
 
       <!-- 隊伍資訊 -->
       <div class="rounded-2xl border border-[#e8e8e8] bg-white p-4 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
         <div class="flex items-start justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <div class="h-12 w-12 overflow-hidden rounded-full bg-[#efe7ff] ring-1 ring-[#e0e0e0]">
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#efe7ff] ring-1 ring-[#e0e0e0]">
               <img v-if="teamIconUrl" :src="teamIconUrl" alt="" class="h-full w-full object-cover" />
-              <div v-else class="h-full w-full" />
             </div>
-            <div>
-              <p class="text-[18px] font-extrabold leading-none text-[#222]">{{ teamName }}</p>
+            <div class="min-w-0">
+              <p class="truncate text-[18px] font-extrabold leading-tight text-[#222]">{{ teamName }}</p>
             </div>
           </div>
 
-          <span class="rounded-full border border-[#674598] px-3 py-1 text-[13px] font-bold text-[#674598]">
+          <span class="shrink-0 rounded-full border border-[#674598] px-3 py-1 text-[13px] font-bold text-[#674598]">
             招募中
           </span>
         </div>
@@ -165,7 +234,7 @@ onMounted(() => {
 
         <div class="mt-4 border-t border-[#e8e8e8] pt-4">
           <p class="text-[13px] font-extrabold text-[#333]">目前隊員</p>
-          <div class="mt-3 grid grid-cols-5 gap-3">
+          <div class="mt-3 grid grid-cols-5 gap-2">
             <div
               v-for="(m, idx) in members.slice(0, MAX_MEMBERS)"
               :key="`${m.name}-${idx}`"
@@ -177,30 +246,42 @@ onMounted(() => {
               <p class="mt-1 w-full truncate text-center text-[11px] text-[#333]">{{ m.name }}</p>
             </div>
 
-            <template v-for="n in Math.max(0, MAX_MEMBERS - members.length)" :key="`empty-${n}`">
-              <div class="flex flex-col items-center opacity-30">
-                <div class="h-12 w-12 rounded-full border border-[#e8e8e8] bg-white" />
-              </div>
-            </template>
+            <div v-for="n in emptySlotCount" :key="`empty-${n}`" class="flex flex-col items-center opacity-40">
+              <div class="h-12 w-12 rounded-full border border-[#d0d0d0] bg-[#ececec]" />
+              <p class="mt-1 w-full text-center text-[10px] leading-tight text-[#888]">尚未邀請</p>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- 規則同意與按鈕 -->
       <div class="rounded-2xl bg-white p-4 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+        <p
+          v-if="joinSubmitError"
+          class="mb-3 rounded-lg bg-[#ffe8e8] px-3 py-2 text-[12px] text-[#a40000]"
+        >
+          {{ joinSubmitError }}
+        </p>
         <label class="flex items-start gap-2 text-[13px] text-[#333]">
           <input
             v-model="agreeChecked"
             type="checkbox"
-            class="mt-1 h-4 w-4 rounded border border-[#888] accent-[#674598]"
+            class="mt-1 h-4 w-4 shrink-0 rounded border border-[#888] accent-[#674598]"
+            :disabled="isJoining"
           />
-          <span class="leading-6">我已閱讀並同意活動規則與個資聲明</span>
+          <span class="leading-6">
+            我已閱讀並同意
+            <router-link :to="{ name: 'checkEvent' }" class="font-semibold text-[#674598] underline">
+              活動規則與個資聲明
+            </router-link>
+          </span>
         </label>
 
         <div class="mt-6 flex gap-3">
           <button
             type="button"
             class="flex-1 rounded-full bg-[#d0d0d0] py-3 text-[15px] font-bold text-[#777]"
+            :disabled="isJoining"
             @click="joinLater"
           >
             稍後再說
@@ -208,10 +289,10 @@ onMounted(() => {
           <button
             type="button"
             class="flex-1 rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-3 text-[15px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
-            :disabled="!agreeChecked"
+            :disabled="!agreeChecked || isJoining"
             @click="confirmJoin"
           >
-            確認加入
+            {{ isJoining ? "加入中…" : "確認加入" }}
           </button>
         </div>
       </div>

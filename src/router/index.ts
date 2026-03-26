@@ -38,6 +38,24 @@ export const router = createRouter({
       path: "/team/join",
       name: "teamJoin",
       component: TeamJoinPage,
+      beforeEnter(to) {
+        const tid =
+          typeof to.query.team_id === "string"
+            ? to.query.team_id.trim()
+            : Array.isArray(to.query.team_id) && typeof to.query.team_id[0] === "string"
+              ? to.query.team_id[0].trim()
+              : "";
+        const iid =
+          typeof to.query.inviter_id === "string"
+            ? to.query.inviter_id.trim()
+            : Array.isArray(to.query.inviter_id) && typeof to.query.inviter_id[0] === "string"
+              ? to.query.inviter_id[0].trim()
+              : "";
+        if (!tid || !iid) {
+          return { name: "home" };
+        }
+        return true;
+      },
     },
   ],
 });

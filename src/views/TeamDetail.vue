@@ -45,11 +45,13 @@ function openMapProgress() {
 
 async function onInviteClick() {
   if (!teamData.value?.teamId) return;
+  const inviterId = await liffService.getUserId();
   await liffService.inviteTeamMemberViaTextShareTargetPicker({
     teamId: teamData.value.teamId,
     teamName: teamData.value.teamName,
     memberCount: members.value.length,
     maxMembers: 5,
+    inviterId,
   });
 }
 
