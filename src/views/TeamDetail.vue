@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import teamCreatedHero from "../assets/images/teamcreatedheroimage.png";
 import teamCreatedContainer from "../assets/images/teamcreatedContainer.png";
+import avatarFallback from "../assets/images/avatar.png";
 import { useTeamStore } from "../stores/teamStore";
 import { liffService } from "../services/liffService";
 
@@ -158,6 +159,7 @@ onMounted(() => {
               :src="member.avatarUrl"
               alt=""
               class="h-[54px] w-[54px] rounded-full border border-[#bca9d1] object-cover"
+              @error="($event.target as HTMLImageElement).src = avatarFallback as string"
             />
 
             <div class="min-w-0 flex-1">

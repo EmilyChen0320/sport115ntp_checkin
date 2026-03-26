@@ -69,6 +69,25 @@ class LiffService {
     }
   }
 
+  async checkFriendship(): Promise<boolean> {
+    const cfg = getEndpointConfig();
+    if (!cfg.enableLiff || !this.initialized) return true;
+    if (this.canUseTestUserFallback(cfg)) return true;
+    try {
+      const { friendFlag } = await liff.getFriendship();
+      return friendFlag;
+    } catch {
+      return true;
+    }
+  }
+
+  getAddFriendUrl(): string {
+    const cfg = getEndpointConfig();
+    const basicId = cfg.basicId?.trim() ?? "";
+    if (!basicId) return "";
+    return `https://line.me/R/ti/p/${basicId}`;
+  }
+
   async getUserProfile(): Promise<LiffUserProfile> {
     const cfg = getEndpointConfig();
     if (this.canUseTestUserFallback(cfg)) {
