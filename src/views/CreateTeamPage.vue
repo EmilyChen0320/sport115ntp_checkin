@@ -6,7 +6,7 @@ import createGroupDisabledImage from "../assets/images/create-group-disabled.png
 import createGroupEnabledImage from "../assets/images/create-group-enabled.png";
 import avatarImage from "../assets/images/avatar.png";
 import photoImage from "../assets/images/photo.png";
-import { createTeam } from "../services/apiClient";
+import { createTeam, getTeamProgress } from "../services/apiClient";
 import { liffService } from "../services/liffService";
 
 const router = useRouter();
@@ -22,6 +22,8 @@ const form = reactive({
   agreed: false,
 });
 const isSubmitting = ref(false);
+const isPageLoading = ref(true);
+const isAlreadyInTeam = ref(false);
 const submitError = ref("");
 const iconFile = ref<File | null>(null);
 const iconPreviewUrl = ref<string>(avatarImage);
@@ -174,7 +176,19 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
-  restoreDraft();
+  void (async () => {
+    restoreDraft();
+    try {
+      const lineUserId = await liffService.getUserId();
+      const team = await getTeamProgress(lineUserId);
+      isAlreadyInTeam.value = Boolean(team);
+    } catch {
+      // 檢查失敗不阻擋表單，避免網路瞬斷影響流程
+      isAlreadyInTeam.value = false;
+    } finally {
+      isPageLoading.value = false;
+    }
+  })();
 });
 
 watch(
@@ -199,7 +213,29 @@ watch(
       <h1 class="text-[18px] font-bold leading-none">我要組隊</h1>
     </header>
 
-    <section class="mt-4 rounded-2xl bg-[#ece8f2] p-3">
+    <section
+      v-if="isPageLoading"
+      class="mt-4 rounded-xl bg-white px-4 py-5 text-center text-[14px] text-[#666] shadow-[0_0_0_1px_rgba(0,0,0,0.04)]"
+    >
+      載入中…
+    </section>
+
+    <section
+      v-else-if="isAlreadyInTeam"
+      class="mt-4 rounded-xl bg-white px-4 py-5 text-center shadow-[0_0_0_1px_rgba(0,0,0,0.04)]"
+    >
+      <p class="text-[16px] font-bold text-[#222]">您已加入隊伍</p>
+      <p class="mt-2 text-[13px] leading-6 text-[#555]">每位參加者僅可加入一支隊伍，無法重複建立。</p>
+      <button
+        type="button"
+        class="mt-4 w-full rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-3 text-[15px] font-bold text-white"
+        @click="router.push({ name: 'teamDetail' })"
+      >
+        前往我的隊伍
+      </button>
+    </section>
+
+    <section v-else class="mt-4 rounded-2xl bg-[#ece8f2] p-3">
       <div class="flex items-center justify-between gap-3">
         <div class="flex-1 text-left">
           <p class="text-[15px] font-extrabold leading-tight text-[#6d4ca7]">邀請 4 位成員開啟團隊打卡</p>
@@ -226,7 +262,7 @@ watch(
       </div>
     </section>
 
-    <section class="mt-4 rounded-[26px] bg-white px-4 py-5 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+    <section v-if="!isPageLoading && !isAlreadyInTeam" class="mt-4 rounded-[26px] bg-white px-4 py-5 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
       <div class="space-y-6">
         <label class="block">
           <p class="mb-2 text-[15px] font-bold leading-none">隊伍名稱 *</p>
