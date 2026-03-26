@@ -38,6 +38,65 @@ export async function getTeamProgress(lineUserId: string): Promise<TeamProgressV
   return requestTeamProgress(apiClient, lineUserId, avatarFallback as string);
 }
 
+export interface CheckInAreaPointView {
+  pointId: number;
+  city: string;
+  district: string;
+  storeName: string;
+  address: string;
+  location: string;
+}
+
+type CheckInAreaResult = {
+  id?: unknown;
+  name?: unknown;
+  points?: unknown;
+};
+
+function pickString(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
+
+function parseDistrictFromAddress(address: string): string {
+  const s = address.trim();
+  if (!s) return "-";
+  const m = s.match(/([^\s縣市]{1,6}(?:區|鄉|鎮|市))/);
+  return m?.[1] ?? "-";
+}
+
+function normalizeAreaPoints(result: unknown): CheckInAreaPointView[] {
+  const areaList = Array.isArray(result) ? result : result ? [result] : [];
+  const rows: CheckInAreaPointView[] = [];
+
+  for (const area of areaList) {
+    const areaObj = (area ?? {}) as CheckInAreaResult;
+    const city = pickString(areaObj.name);
+    const points = Array.isArray(areaObj.points) ? areaObj.points : [];
+    for (const point of points) {
+      const p = (point ?? {}) as Record<string, unknown>;
+      const address = pickString(p.address);
+      rows.push({
+        pointId: Number(p.id ?? 0) || 0,
+        city,
+        district: parseDistrictFromAddress(address),
+        storeName: pickString(p.name),
+        address,
+        location: pickString(p.location),
+      });
+    }
+  }
+
+  return rows;
+}
+
+/** GET /api/check-in/areas?filter[name]= */
+export async function getCheckInAreas(filterName?: string): Promise<CheckInAreaPointView[]> {
+  const filter = filterName?.trim() ?? "";
+  const params = filter ? { "filter[name]": filter } : undefined;
+  const { data } = await apiClient.get("/api/check-in/areas", { params });
+  return normalizeAreaPoints((data as { result?: unknown })?.result);
+}
+
 /** POST /api/check-in/teams */
 export async function createTeam(payload: CreateTeamPayload): Promise<unknown> {
   const formData = new FormData();

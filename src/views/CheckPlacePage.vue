@@ -1,34 +1,44 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { getCheckInAreas, type CheckInAreaPointView } from "../services/apiClient";
 
 const router = useRouter();
 
-interface CheckPlaceItem {
-  city: string;
-  district: string;
-  storeName: string;
-  address: string;
+const city = ref("");
+const locations = ref<CheckInAreaPointView[]>([]);
+const isLoading = ref(false);
+const loadError = ref("");
+
+const cities = computed(() => {
+  const values = Array.from(new Set(locations.value.map((item) => item.city).filter(Boolean)));
+  return values.sort((a, b) => a.localeCompare(b, "zh-Hant"));
+});
+
+const filteredLocations = computed(() => {
+  if (!city.value) return locations.value;
+  return locations.value.filter((item) => item.city === city.value);
+});
+
+async function loadAreas() {
+  isLoading.value = true;
+  loadError.value = "";
+  try {
+    const rows = await getCheckInAreas();
+    locations.value = rows;
+    if (!city.value || !cities.value.includes(city.value)) {
+      city.value = cities.value[0] ?? "";
+    }
+  } catch (e) {
+    loadError.value = e instanceof Error ? e.message : "讀取可打卡地點失敗，請稍後再試。";
+  } finally {
+    isLoading.value = false;
+  }
 }
 
-const city = ref("新北市");
-const cities = ["新北市", "台北市", "基隆市"];
-
-const allLocations: CheckPlaceItem[] = [
-  { city: "新北市", district: "三峽區", storeName: "85度C(三峽文化店)", address: "新北市三峽區文化路152號" },
-  { city: "新北市", district: "板橋區", storeName: "85度C(板橋中山店)", address: "新北市板橋區中山路一段266號" },
-  { city: "新北市", district: "新莊區", storeName: "85度C(新莊中平店)", address: "新北市新莊區中平路84號" },
-  { city: "新北市", district: "中和區", storeName: "85度C(中和圓通店)", address: "新北市中和區中正路226號" },
-  { city: "新北市", district: "永和區", storeName: "85度C(永和頂溪店)", address: "新北市永和區永和路二段105號" },
-  { city: "新北市", district: "三重區", storeName: "85度C(三重三和店)", address: "新北市三重區三和路四段272號" },
-  { city: "台北市", district: "中山區", storeName: "85度C(台北錦州店)", address: "台北市中山區錦州街28-8號" },
-  { city: "台北市", district: "信義區", storeName: "85度C(台北永吉店)", address: "台北市信義區永吉路269號" },
-  { city: "基隆市", district: "七堵區", storeName: "85度C(七堵明德店)", address: "基隆市七堵區明德一路212號一樓" },
-];
-
-const filteredLocations = computed(() =>
-  allLocations.filter((item) => item.city === city.value),
-);
+onMounted(() => {
+  void loadAreas();
+});
 </script>
 
 <template>
@@ -51,8 +61,10 @@ const filteredLocations = computed(() =>
         <select
           id="city-select"
           v-model="city"
+          :disabled="isLoading || !cities.length"
           class="h-[42px] w-full appearance-none rounded-xl border border-[#cfd1d7] bg-white px-3 pr-9 text-[19px] leading-none outline-none"
         >
+          <option v-if="!cities.length" value="">{{ isLoading ? "載入中..." : "尚無資料" }}</option>
           <option v-for="item in cities" :key="item" :value="item">{{ item }}</option>
         </select>
         <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-[#7b7f88]">⌄</span>
@@ -60,10 +72,32 @@ const filteredLocations = computed(() =>
     </section>
 
     <section class="mt-4">
-      <div class="border-y border-[#d9dbe1]">
+      <div
+        v-if="loadError"
+        class="rounded-xl border border-[#f0d7dc] bg-white px-3 py-3 text-[13px] text-[#a40000]"
+      >
+        <p>{{ loadError }}</p>
+        <button
+          type="button"
+          class="mt-3 rounded-full border border-[#674598] px-3 py-1 text-[12px] font-bold text-[#674598]"
+          @click="loadAreas"
+        >
+          重新載入
+        </button>
+      </div>
+
+      <div v-else-if="isLoading" class="rounded-xl border border-[#d9dbe1] bg-white px-3 py-4 text-[13px] text-[#555]">
+        載入可打卡地點中...
+      </div>
+
+      <div v-else-if="!filteredLocations.length" class="rounded-xl border border-[#d9dbe1] bg-white px-3 py-4 text-[13px] text-[#555]">
+        目前沒有可顯示的打卡地點
+      </div>
+
+      <div v-else class="border-y border-[#d9dbe1]">
         <div
           v-for="(row, index) in filteredLocations"
-          :key="`${row.storeName}-${index}`"
+          :key="`${row.pointId}-${index}`"
           class="grid min-h-[46px] grid-cols-[74px_1fr_1.3fr] items-center border-b border-[#d9dbe1] px-1 text-[14px] leading-[1.2] last:border-b-0"
         >
           <p class="pr-2">{{ row.city }}</p>
