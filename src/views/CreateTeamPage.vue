@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { AxiosError } from "axios";
 import createGroupDisabledImage from "../assets/images/create-group-disabled.png";
@@ -12,6 +12,7 @@ import { liffService } from "../services/liffService";
 const router = useRouter();
 const route = useRoute();
 const iconInputRef = ref<HTMLInputElement | null>(null);
+const FORM_DRAFT_KEY = "create-team-form-draft-v1";
 
 const form = reactive({
   teamName: "",
@@ -62,16 +63,65 @@ const isTeamNameValid = computed(() => {
   return length >= 2 && length <= 12;
 });
 
+function normalizePhone(raw: string): string {
+  return raw.replace(/[^\d]/g, "");
+}
+
+const isPhoneValid = computed(() => {
+  const digits = normalizePhone(form.phone.trim());
+  return /^09\d{8}$/.test(digits);
+});
+
+const isEmailValid = computed(() => {
+  const email = form.email.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+});
+
 const canSubmit = computed(() => {
   return (
     isTeamNameValid.value &&
     form.captainName.trim().length > 0 &&
-    form.phone.trim().length > 0 &&
-    form.email.trim().length > 0 &&
+    isPhoneValid.value &&
+    isEmailValid.value &&
     form.agreed &&
     Boolean(iconFile.value)
   );
 });
+
+function saveDraft() {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.setItem(
+    FORM_DRAFT_KEY,
+    JSON.stringify({
+      teamName: form.teamName,
+      captainName: form.captainName,
+      phone: form.phone,
+      email: form.email,
+      agreed: form.agreed,
+    }),
+  );
+}
+
+function restoreDraft() {
+  if (typeof sessionStorage === "undefined") return;
+  const raw = sessionStorage.getItem(FORM_DRAFT_KEY);
+  if (!raw) return;
+  try {
+    const draft = JSON.parse(raw) as Partial<typeof form>;
+    form.teamName = typeof draft.teamName === "string" ? draft.teamName : "";
+    form.captainName = typeof draft.captainName === "string" ? draft.captainName : "";
+    form.phone = typeof draft.phone === "string" ? draft.phone : "";
+    form.email = typeof draft.email === "string" ? draft.email : "";
+    form.agreed = Boolean(draft.agreed);
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearDraft() {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.removeItem(FORM_DRAFT_KEY);
+}
 
 function onSubmit() {
   if (!canSubmit.value || isSubmitting.value) return;
@@ -88,6 +138,7 @@ function onSubmit() {
         leaderEmail: form.email.trim(),
         icon: iconFile.value as File,
       });
+      clearDraft();
 
       router.push(redirectAfterCreate());
     } catch (error) {
@@ -109,11 +160,29 @@ function onSubmit() {
   })();
 }
 
+function openActivityRules() {
+  router.push({
+    name: "checkEvent",
+    query: { from: "createTeam", after: after.value },
+  });
+}
+
 onBeforeUnmount(() => {
   if (iconPreviewUrl.value.startsWith("blob:")) {
     URL.revokeObjectURL(iconPreviewUrl.value);
   }
 });
+
+onMounted(() => {
+  restoreDraft();
+});
+
+watch(
+  () => [form.teamName, form.captainName, form.phone, form.email, form.agreed],
+  () => {
+    saveDraft();
+  },
+);
 </script>
 
 <template>
@@ -136,13 +205,13 @@ onBeforeUnmount(() => {
           <p class="text-[15px] font-extrabold leading-tight text-[#6d4ca7]">邀請 4 位成員開啟團隊打卡</p>
           <p class="mt-1 text-[12px] text-[#333333cc]">點擊右方更換隊伍頭像</p>
         </div>
-        <div class="relative mt-1 h-[86px] w-[86px] shrink-0">
+        <div class="relative mt-1 h-[86px] w-[86px] shrink-0 cursor-pointer" role="button" tabindex="0" @click="openIconPicker">
           <img :src="iconPreviewUrl" alt="隊伍頭像" class="block h-full w-full rounded-full object-cover" />
           <button
             type="button"
             aria-label="更換隊伍頭像"
             class="absolute -right-1 bottom-1 h-6 w-6 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
-            @click="openIconPicker"
+            @click.stop="openIconPicker"
           >
             <img :src="photoImage" alt="" class="block h-full w-full" />
           </button>
@@ -184,9 +253,12 @@ onBeforeUnmount(() => {
           <input
             v-model="form.phone"
             type="tel"
-            placeholder="請輸入手機號碼"
+            placeholder="請輸入手機號碼（例：0910-173-320）"
             class="h-11 w-full rounded-xl border border-[#e5e5e5] px-4 text-[15px] text-[#222] placeholder:text-[#b8b8b8] outline-none"
           />
+          <p v-if="form.phone.trim() && !isPhoneValid" class="mt-1 text-[12px] text-[#a40000]">
+            請輸入正確手機號碼（例如 09xx-xxx-xxx）。
+          </p>
         </label>
 
         <label class="block">
@@ -197,6 +269,9 @@ onBeforeUnmount(() => {
             placeholder="請輸入Email"
             class="h-11 w-full rounded-xl border border-[#e5e5e5] px-4 text-[15px] text-[#222] placeholder:text-[#b8b8b8] outline-none"
           />
+          <p v-if="form.email.trim() && !isEmailValid" class="mt-1 text-[12px] text-[#a40000]">
+            請輸入正確 Email 格式。
+          </p>
         </label>
       </div>
 
@@ -208,9 +283,9 @@ onBeforeUnmount(() => {
         />
         <span class="text-[13px] leading-6 text-[#333]">
           我已閱讀並
-          <button type="button" class="underline text-[#6d4ca7]">同意活動規則</button>
+          <button type="button" class="underline text-[#6d4ca7]" @click="openActivityRules">同意活動規則</button>
           與
-          <button type="button" class="underline text-[#6d4ca7]">個資聲明</button>
+          <button type="button" class="underline text-[#6d4ca7]" @click="openActivityRules">個資聲明</button>
         </span>
       </label>
       <p v-if="submitError" class="mt-3 rounded-lg bg-[#ffe8e8] px-3 py-2 text-[12px] text-[#a40000]">
