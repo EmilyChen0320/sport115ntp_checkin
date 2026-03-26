@@ -29,8 +29,30 @@ function redirectFromLiffState(to: RouteLocationNormalized) {
   } catch {
     return null;
   }
-  const qs = inner.startsWith("?") ? inner.slice(1) : inner;
+  /**
+   * 相容兩種 liff.state 內容：
+   * 1) ?path=/team/join&team_id=...&inviter_id=...
+   * 2) /team/join?team_id=...&inviter_id=...
+   */
   try {
+    // 先處理新版：/team/join?team_id=...&inviter_id=...
+    if (inner.startsWith("/")) {
+      const [pathname, query = ""] = inner.split("?");
+      const teamPath = pathname.trim();
+      const sp = new URLSearchParams(query);
+      const teamId = sp.get("team_id")?.trim() ?? "";
+      const inviterId = sp.get("inviter_id")?.trim() ?? "";
+      if ((teamPath === "/team/join" || teamPath.endsWith("/team/join")) && teamId && inviterId) {
+        return {
+          path: "/team/join",
+          query: { team_id: teamId, inviter_id: inviterId },
+          replace: true as const,
+        };
+      }
+    }
+
+    // 再處理舊版：?path=/team/join&team_id=...&inviter_id=...
+    const qs = inner.startsWith("?") ? inner.slice(1) : inner;
     const sp = new URLSearchParams(qs);
     const pathRaw = sp.get("path");
     if (!pathRaw) return null;
