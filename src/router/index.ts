@@ -1,10 +1,54 @@
 import { createRouter, createWebHistory } from "vue-router";
+import type { RouteLocationNormalized } from "vue-router";
 import HomePage from "../views/HomePage.vue";
 import CheckPlacePage from "../views/CheckPlacePage.vue";
 import CheckEventPage from "../views/CheckEventPage.vue";
 import CreateTeamPage from "../views/CreateTeamPage.vue";
 import TeamDetailPage from "../views/TeamDetail.vue";
 import TeamJoinPage from "../views/TeamJoinPage.vue";
+
+function firstQueryValue(q: RouteLocationNormalized["query"][string]): string {
+  if (typeof q === "string") return q;
+  if (Array.isArray(q) && typeof q[0] === "string") return q[0];
+  return "";
+}
+
+/**
+ * 舊版 LIFF 連結 `https://liff.line.me/{id}?path=/team/join&…` 經 primary redirect 後，
+ * 參數會落在 Endpoint URL 的 `liff.state`（見 LINE 文件）。
+ * 若不解碼導頁，使用者會卡在首頁僅帶 query。
+ * @see https://developers.line.biz/en/docs/liff/opening-liff-app/#create-a-primary-redirect-url
+ */
+function redirectFromLiffState(to: RouteLocationNormalized) {
+  const raw = firstQueryValue(to.query["liff.state"]);
+  if (!raw) return null;
+
+  let inner: string;
+  try {
+    inner = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  const qs = inner.startsWith("?") ? inner.slice(1) : inner;
+  try {
+    const sp = new URLSearchParams(qs);
+    const pathRaw = sp.get("path");
+    if (!pathRaw) return null;
+    const path = pathRaw.startsWith("/") ? pathRaw : `/${pathRaw}`;
+    const teamId = sp.get("team_id")?.trim() ?? "";
+    const inviterId = sp.get("inviter_id")?.trim() ?? "";
+    if ((path === "/team/join" || path.endsWith("/team/join")) && teamId && inviterId) {
+      return {
+        path: "/team/join",
+        query: { team_id: teamId, inviter_id: inviterId },
+        replace: true as const,
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -58,4 +102,10 @@ export const router = createRouter({
       },
     },
   ],
+});
+
+router.beforeEach((to) => {
+  const fromState = redirectFromLiffState(to);
+  if (fromState) return fromState;
+  return true;
 });

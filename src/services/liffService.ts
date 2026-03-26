@@ -230,10 +230,13 @@ class LiffService {
 
     const liffId = endpoint.liffId?.trim() || "";
     const inviterEncoded = encodeURIComponent(options.inviterId);
+    /**
+     * LIFF 額外路徑須接在 liffId 後（path 片段），不可再用 ?path= 舊寫法，否則可能 404。
+     * @see https://developers.line.biz/en/docs/liff/opening-liff-app/#create-a-primary-redirect-url
+     * 例：https://liff.line.me/{liffId}/team/join?team_id=…&inviter_id=…
+     */
     const joinUrl = liffId
-      ? `https://liff.line.me/${liffId}?path=/team/join&team_id=${encodeURIComponent(
-          options.teamId,
-        )}&inviter_id=${inviterEncoded}`
+      ? `https://liff.line.me/${liffId}/team/join?team_id=${encodeURIComponent(options.teamId)}&inviter_id=${inviterEncoded}`
       : "";
 
     /** 不含網址：給 Web Share 用，避免 text 與 url 重複顯示同一連結 */
