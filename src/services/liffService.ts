@@ -54,7 +54,7 @@ class LiffService {
       return;
     }
 
-    if (!liff.isLoggedIn()) {
+    if (!liff.isLoggedIn() && !liff.isInClient()) {
       liff.login();
     }
   }
@@ -72,8 +72,10 @@ class LiffService {
     }
 
     if (!liff.isLoggedIn()) {
-      liff.login();
-      throw new Error("尚未完成 LINE 登入，正在導向登入頁面…");
+      if (!liff.isInClient()) {
+        liff.login();
+      }
+      throw new Error("尚未完成 LINE 登入，請從 LINE 開啟此頁面。");
     }
 
     const profile = await liff.getProfile();

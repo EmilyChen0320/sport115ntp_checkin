@@ -86,7 +86,7 @@ onMounted(() => {
       <button
         type="button"
         aria-label="查看活動辦法"
-        class="absolute right-8 top-[132px] block w-[160px] max-w-[49%] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="absolute right-8 top-[132px] block w-[160px] max-w-[49%] rounded-full transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
         @click="onCheckEventClick"
       >
         <img :src="checkEventImage" alt="查看活動辦法" class="block h-auto w-full" />
@@ -94,7 +94,7 @@ onMounted(() => {
       <button
         type="button"
         aria-label="查看可打卡地點"
-        class="absolute right-5 bottom-2 block w-[160px] max-w-[49%] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="absolute right-5 bottom-2 block w-[160px] max-w-[49%] rounded-full transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
         @click="onCheckPlaceClick"
       >
         <img :src="checkPlaceImage" alt="查看可打卡地點" class="block h-auto w-full" />
@@ -104,7 +104,7 @@ onMounted(() => {
     <section class="px-4 pt-[14px] pb-6">
       <button
         type="button"
-        class="block w-full rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="block w-full rounded-3xl transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
         @click="onActionClick('team')"
       >
         <img
@@ -117,7 +117,7 @@ onMounted(() => {
       <div class="mt-3 grid grid-cols-2 gap-3">
         <button
           type="button"
-          class="block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+          class="block rounded-3xl transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
           @click="onActionClick('checkin')"
         >
           <img
@@ -129,7 +129,7 @@ onMounted(() => {
 
         <button
           type="button"
-          class="block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+          class="block rounded-3xl transition duration-100 ease-out active:scale-[0.98] active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
           @click="onActionClick('progress')"
         >
           <img
@@ -153,7 +153,7 @@ onMounted(() => {
       <button
         type="button"
         aria-label="關閉"
-        class="absolute right-4 top-4 h-7 w-7 rounded-full text-[22px] leading-none text-[#777] hover:bg-[#f3f3f3]"
+        class="absolute right-4 top-4 h-7 w-7 rounded-full text-[22px] leading-none text-[#777] transition duration-100 ease-out active:scale-[0.95] active:opacity-80 hover:bg-[#f3f3f3]"
         @click="showNoTeamPopup = false"
       >
         ×
@@ -172,14 +172,14 @@ onMounted(() => {
       <div class="mt-6 flex gap-4">
         <button
           type="button"
-          class="flex-1 rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-2.5 text-[16px] font-bold text-white"
+          class="flex-1 rounded-full bg-linear-to-r from-[#674598] to-[#bca9d1] py-2.5 text-[16px] font-bold text-white transition duration-100 ease-out active:scale-[0.98] active:opacity-90"
           @click="goCreateTeamFromPopup"
         >
           立即組隊
         </button>
         <button
           type="button"
-          class="flex-1 rounded-full bg-[#e0e0e0] py-2.5 text-[16px] font-bold text-[#7a7a7a]"
+          class="flex-1 rounded-full bg-[#e0e0e0] py-2.5 text-[16px] font-bold text-[#7a7a7a] transition duration-100 ease-out active:scale-[0.98] active:opacity-90"
           @click="showNoTeamPopup = false"
         >
           稍後再說
