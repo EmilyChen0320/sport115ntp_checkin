@@ -12,16 +12,18 @@ type WebShareResult = "shared" | "aborted" | "unavailable";
 
 class LiffService {
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
   private liffIdMissingNotified = false;
   private canUseTestUserFallback(cfg: ReturnType<typeof getEndpointConfig>): boolean {
     return import.meta.env.DEV || Boolean(cfg.useMockTeamApi);
   }
 
   async init(): Promise<void> {
+    if (this.initialized) return;
+    if (this.initPromise) return this.initPromise;
+
     const cfg = getEndpointConfig();
-    if (this.initialized || !cfg.enableLiff) {
-      return;
-    }
+    if (!cfg.enableLiff) return;
 
     const liffId = cfg.liffId?.trim() ?? "";
     if (!liffId) {
@@ -34,8 +36,16 @@ class LiffService {
       return;
     }
 
-    await liff.init({ liffId });
-    this.initialized = true;
+    this.initPromise = liff.init({ liffId }).then(
+      () => {
+        this.initialized = true;
+      },
+      (err) => {
+        this.initPromise = null;
+        throw err;
+      },
+    );
+    return this.initPromise;
   }
 
   isLiffEnvironment(): boolean {
