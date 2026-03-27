@@ -32,8 +32,16 @@ const memberRatioLabel = computed(() => {
 });
 
 const showUnderFiveHint = computed(() => members.value.length < 5);
+const MAX_MEMBERS = 5;
+const expandedMemberIndex = ref<number | null>(null);
 
-const canInvite = computed(() => Boolean(teamData.value?.teamId && myLineUserId.value));
+const isTeamFull = computed(() => members.value.length >= MAX_MEMBERS);
+const canInvite = computed(() => Boolean(teamData.value?.teamId && myLineUserId.value) && !isTeamFull.value);
+const inviteHintText = computed(() => {
+  if (!teamData.value?.teamId || !myLineUserId.value) return "載入中，暫時無法邀請";
+  if (isTeamFull.value) return "隊伍已滿員（5/5），目前無法再邀請新隊員";
+  return "";
+});
 
 async function loadTeam() {
   const lineUserId = await liffService.getUserId();
@@ -52,6 +60,7 @@ function openMapProgress() {
 /** 不可在此 await API：須在點擊同一個同步流程內呼叫 shareTargetPicker */
 function onInviteClick() {
   if (!teamData.value?.teamId || !myLineUserId.value) return;
+  if (isTeamFull.value) return;
   liffService.inviteTeamMemberViaTextShareTargetPicker({
     teamId: teamData.value.teamId,
     teamName: teamData.value.teamName,
@@ -59,6 +68,10 @@ function onInviteClick() {
     maxMembers: 5,
     inviterId: myLineUserId.value,
   });
+}
+
+function toggleMember(index: number) {
+  expandedMemberIndex.value = expandedMemberIndex.value === index ? null : index;
 }
 
 onMounted(() => {
@@ -154,33 +167,61 @@ onMounted(() => {
           <div
             v-for="(member, index) in members"
             :key="`${member.name}-${index}`"
-            class="flex items-center gap-3 px-3 py-3"
+            class="px-3 py-3"
             :class="{ 'border-b border-[#dddddd]': index !== members.length - 1 }"
           >
-            <img
-              :src="member.avatarUrl"
-              alt=""
-              class="h-[54px] w-[54px] rounded-full border border-[#bca9d1] object-cover"
-              @error="($event.target as HTMLImageElement).src = avatarFallback as string"
-            />
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 text-left"
+              @click="toggleMember(index)"
+            >
+              <img
+                :src="member.avatarUrl"
+                alt=""
+                class="h-[54px] w-[54px] rounded-full border border-[#bca9d1] object-cover"
+                @error="($event.target as HTMLImageElement).src = avatarFallback as string"
+              />
 
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1">
-                  <p class="text-[16px] font-bold">{{ member.name }}</p>
-                  <span
-                    v-if="member.isCaptain"
-                    class="rounded-full border border-[#eeeaf5] bg-[#674598] px-2 py-[2px] text-[11px] text-[#eeeaf5]"
-                  >
-                    隊長
-                  </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1">
+                    <p class="text-[16px] font-bold">{{ member.name }}</p>
+                    <span
+                      v-if="member.isCaptain"
+                      class="rounded-full border border-[#eeeaf5] bg-[#674598] px-2 py-[2px] text-[11px] text-[#eeeaf5]"
+                    >
+                      隊長
+                    </span>
+                  </div>
+                  <p class="text-[12px]">打卡次數：{{ member.checkInCount }}次</p>
                 </div>
-                <p class="text-[12px]">打卡次數：{{ member.checkInCount }}次</p>
+                <p v-if="showUnderFiveHint" class="mt-1 text-[11px] text-[#333333b3]">人數需滿五人才可開始打卡</p>
               </div>
-              <p v-if="showUnderFiveHint" class="mt-1 text-[11px] text-[#333333b3]">人數需滿五人才可開始打卡</p>
-            </div>
 
-            <span class="text-[18px] text-[#555]">⌄</span>
+              <span class="text-[18px] text-[#555]">{{ expandedMemberIndex === index ? "⌃" : "⌄" }}</span>
+            </button>
+
+            <div
+              v-if="expandedMemberIndex === index"
+              class="mt-3 rounded-xl border border-[#ece8f2] bg-[#faf9fc] px-3 py-2"
+            >
+              <p class="text-[12px] font-bold text-[#674598]">打卡地點</p>
+              <p
+                v-if="!member.checkInPoints.length"
+                class="mt-1 text-[12px] text-[#777]"
+              >
+                尚無打卡紀錄
+              </p>
+              <ul v-else class="mt-2 space-y-1">
+                <li
+                  v-for="(point, pointIndex) in member.checkInPoints"
+                  :key="`${point.pointId || point.name}-${pointIndex}`"
+                  class="text-[12px] leading-relaxed text-[#444]"
+                >
+                  {{ point.name }}
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div class="p-3">
@@ -192,6 +233,9 @@ onMounted(() => {
             >
               ＋ 邀請新隊員
             </button>
+            <p v-if="inviteHintText" class="mt-2 text-center text-[12px] text-[#674598]">
+              {{ inviteHintText }}
+            </p>
           </div>
         </div>
       </section>

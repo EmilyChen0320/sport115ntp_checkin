@@ -1,9 +1,18 @@
 /** 與 UI / store 一致的隊伍進度資料（已由 API 正規化） */
+export interface TeamMemberCheckInPointView {
+  pointId: string;
+  name: string;
+  location: string;
+  address: string;
+  checkedInAt: string;
+}
+
 export interface TeamMemberView {
   avatarUrl: string;
   name: string;
   isCaptain: boolean;
   checkInCount: number;
+  checkInPoints: TeamMemberCheckInPointView[];
 }
 
 export interface TeamProgressView {

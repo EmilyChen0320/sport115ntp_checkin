@@ -261,7 +261,7 @@ onMounted(() => {
       <div class="rounded-2xl bg-white p-4 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
         <p
           v-if="joinSubmitError"
-          class="mb-3 rounded-lg border border-[#f0d7dc] bg-white px-3 py-2 text-[12px] text-[#a40000]"
+          class="mb-3 rounded-lg border border-[#d9cdee] bg-white px-3 py-2 text-[12px] text-[#674598]"
         >
           {{ joinSubmitError }}
         </p>

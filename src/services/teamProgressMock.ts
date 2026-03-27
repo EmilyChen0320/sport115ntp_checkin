@@ -14,18 +14,21 @@ export function createMockTeamProgress(fallbackAvatarUrl: string, lineUserId: st
         name: "王小明",
         isCaptain: true,
         checkInCount: 2,
+        checkInPoints: [],
       },
       {
         avatarUrl: fallbackAvatarUrl,
         name: "李曉華",
         isCaptain: false,
         checkInCount: 1,
+        checkInPoints: [],
       },
       {
         avatarUrl: fallbackAvatarUrl,
         name: "吳美麗",
         isCaptain: false,
         checkInCount: 0,
+        checkInPoints: [],
       },
     ],
   };

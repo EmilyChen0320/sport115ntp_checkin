@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, isAxiosError } from "axios";
-import type { TeamProgressView, TeamMemberView } from "../types/teamProgress";
+import type { TeamProgressView, TeamMemberCheckInPointView, TeamMemberView } from "../types/teamProgress";
 
 /** 後端可能使用不同欄位名；此處容錯正規化 */
 export type TeamProgressApiPayload = Record<string, unknown>;
@@ -34,6 +34,16 @@ function pickNumber(...values: unknown[]): number {
   return 0;
 }
 
+function normalizeMemberCheckInPoint(row: Record<string, unknown>): TeamMemberCheckInPointView {
+  return {
+    pointId: pickIdLikeString(row.point_id, row.pointId, row.id),
+    name: pickString(row.name, row.point_name, row.pointName) || "-",
+    location: pickString(row.location),
+    address: pickString(row.address),
+    checkedInAt: pickString(row.checked_in_at, row.checkedInAt, row.created_at, row.createdAt),
+  };
+}
+
 function formatCreatedDate(raw: string): string {
   if (!raw) return "";
   const d = new Date(raw);
@@ -54,6 +64,9 @@ function unwrapPayloadRoot(payload: TeamProgressApiPayload): TeamProgressApiPayl
 }
 
 function normalizeMember(row: Record<string, unknown>, fallbackAvatar: string): TeamMemberView {
+  const checkInPointsRaw = row.check_in_points ?? row.checkInPoints ?? row.points;
+  const checkInPointsList = Array.isArray(checkInPointsRaw) ? checkInPointsRaw : [];
+
   return {
     avatarUrl: pickString(row.avatar_url, row.avatarUrl, row.avatar, row.picture_url, row.pictureUrl) || fallbackAvatar,
     name: pickString(row.name, row.display_name, row.displayName, row.line_display_name) || "隊員",
@@ -61,6 +74,9 @@ function normalizeMember(row: Record<string, unknown>, fallbackAvatar: string): 
       row.is_captain ?? row.isCaptain ?? row.captain ?? row.is_leader ?? row.isLeader,
     ),
     checkInCount: pickNumber(row.check_in_count, row.checkInCount, row.check_in_times, row.checkInTimes),
+    checkInPoints: checkInPointsList
+      .filter((point): point is Record<string, unknown> => typeof point === "object" && point !== null)
+      .map((point) => normalizeMemberCheckInPoint(point)),
   };
 }
 

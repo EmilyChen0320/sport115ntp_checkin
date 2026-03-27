@@ -62,6 +62,22 @@ function setPhase(next: CheckInPhase, message = "") {
   errorMessage.value = message;
 }
 
+function extractApiErrorMessage(error: unknown): string {
+  const fallback = "上傳失敗，請稍後再試。";
+  const err = error as {
+    response?: { data?: { message?: unknown; result?: { message?: unknown } }; status?: number };
+    message?: unknown;
+  };
+  const dataMessage =
+    (typeof err?.response?.data?.message === "string" && err.response.data.message.trim()) ||
+    (typeof err?.response?.data?.result?.message === "string" && err.response.data.result.message.trim()) ||
+    "";
+  if (dataMessage) return dataMessage;
+  if (typeof err?.message === "string" && err.message.trim()) return err.message;
+  if (err?.response?.status === 409) return "您的隊伍已在此打卡點打過卡";
+  return fallback;
+}
+
 async function getCurrentGpsLocation(): Promise<string> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     throw new Error("裝置不支援 GPS 定位功能。");
@@ -227,7 +243,7 @@ async function doSubmit() {
     });
     setPhase("success");
   } catch (e) {
-    setPhase("upload-failed", e instanceof Error ? e.message : "上傳失敗，請稍後再試。");
+    setPhase("upload-failed", extractApiErrorMessage(e));
   }
 }
 
@@ -281,7 +297,7 @@ onBeforeUnmount(() => {
       <div v-else-if="phase === 'team-incomplete'" class="mt-5 space-y-3 rounded-2xl bg-white/90 p-4 py-6 text-center shadow-[0_10px_24px_rgba(0,0,0,0.1)]">
         <p class="text-[18px] font-bold">您的隊伍尚未完成組隊</p>
         <p class="text-[13px] text-[#666]">需滿 5 位隊員才可開始聖火傳遞打卡。</p>
-        <p v-if="errorMessage" class="text-[12px] text-[#a40000]">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="text-[12px] text-[#674598]">{{ errorMessage }}</p>
         <button
           type="button"
           class="mx-auto block rounded-full bg-[#674598] px-5 py-2 text-[14px] font-bold text-white"
@@ -433,30 +449,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- preview with submit -->
-          <div v-else-if="phase === 'camera' && compositedPreviewUrl" class="flex flex-col items-center gap-3 p-4">
+          <!-- preview -->
+          <div v-else-if="phase === 'camera' && previewUrl" class="h-full w-full p-3">
             <img
-              :src="compositedPreviewUrl"
-              alt="合成預覽"
-              class="w-full max-w-[260px] rounded-lg"
+              :src="previewUrl"
+              alt="拍照預覽"
+              class="h-full w-full rounded-lg object-contain"
             />
-            <div class="flex gap-2">
-              <button
-                type="button"
-                class="rounded-full bg-white/20 px-4 py-1.5 text-[12px] font-bold text-white"
-                @click.stop="onCameraAreaClick"
-              >
-                重拍
-              </button>
-              <button
-                type="button"
-                class="rounded-full bg-[#674598] px-4 py-1.5 text-[12px] font-bold text-white"
-                :disabled="isBusy || !compositedBlob"
-                @click.stop="doSubmit"
-              >
-                送出打卡
-              </button>
-            </div>
           </div>
 
           <!-- default: camera prompt -->
@@ -470,6 +469,25 @@ onBeforeUnmount(() => {
             </p>
           </div>
           </div>
+        </div>
+
+        <!-- camera actions (outside photo frame) -->
+        <div v-if="phase === 'camera'" class="mt-3 flex justify-center gap-2">
+          <button
+            type="button"
+            class="rounded-full bg-[#9f8fb2] px-4 py-1.5 text-[12px] font-bold text-white"
+            @click.stop="onCameraAreaClick"
+          >
+            重拍
+          </button>
+          <button
+            type="button"
+            class="rounded-full bg-[#674598] px-4 py-1.5 text-[12px] font-bold text-white"
+            :disabled="isBusy || !compositedBlob"
+            @click.stop="doSubmit"
+          >
+            送出打卡
+          </button>
         </div>
       </template>
 
