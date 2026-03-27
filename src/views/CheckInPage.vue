@@ -35,6 +35,7 @@ const errorMessage = ref("");
 const lineUserId = ref("");
 const gpsLocation = ref("");
 const nearbyPoint = ref<CheckInDetectPointView | null>(null);
+const teamCheckedPointIds = ref<Set<string>>(new Set());
 const selectedPhotoFile = ref<File | null>(null);
 const previewUrl = ref("");
 const compositedBlob = ref<Blob | null>(null);
@@ -191,7 +192,9 @@ async function detectFlow() {
       return;
     }
     nearbyPoint.value = points[0];
-    if (nearbyPoint.value.alreadyCheckedByTeam) {
+    const pointId = String(nearbyPoint.value.pointId ?? "").trim();
+    const alreadyCheckedByTeamProgress = pointId ? teamCheckedPointIds.value.has(pointId) : false;
+    if (nearbyPoint.value.alreadyCheckedByTeam || alreadyCheckedByTeamProgress) {
       setPhase("already-checked");
       return;
     }
@@ -258,6 +261,14 @@ async function bootstrap() {
       setPhase("team-incomplete");
       return;
     }
+    const checkedIds = new Set<string>();
+    for (const member of team.members) {
+      for (const point of member.checkInPoints) {
+        const pointId = String(point.pointId ?? "").trim();
+        if (pointId) checkedIds.add(pointId);
+      }
+    }
+    teamCheckedPointIds.value = checkedIds;
     await detectFlow();
   } catch (e) {
     setPhase("team-incomplete", e instanceof Error ? e.message : "目前無法開始打卡流程。");
