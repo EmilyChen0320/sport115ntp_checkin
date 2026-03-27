@@ -175,7 +175,7 @@ onMounted(() => {
 
     <div
       v-if="pageError"
-      class="mt-4 rounded-2xl border border-[#f0d7dc] bg-white px-4 py-4 text-[13px] text-[#a40000] shadow-[0_0_0_1px_rgba(0,0,0,0.03)]"
+      class="mt-4 rounded-2xl border border-[#d9cdee] bg-white px-4 py-4 text-[13px] text-[#674598] shadow-[0_0_0_1px_rgba(0,0,0,0.03)]"
     >
       <p>{{ pageError }}</p>
       <div class="mt-4 flex flex-col gap-2">
