@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
               <p class="mt-0.5 text-[12px] text-[#666]">{{ nearbyPoint?.address || nearbyPoint?.location }}</p>
               <p class="mt-1 text-[13px] font-bold text-[#27ae60]">✓ 您在打卡範圍內</p>
             </div>
-            <img :src="mapLocationLogo" alt="" class="h-[72px] w-[72px]" />
+            <img :src="pointLogo" alt="" class="h-[72px] w-[72px] object-contain" />
           </div>
         </div>
 
