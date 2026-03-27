@@ -48,7 +48,7 @@ export interface CheckInAreaPointView {
 }
 
 export interface CheckInDetectPointView {
-  pointId: number;
+  pointId: string;
   name: string;
   location: string;
   address: string;
@@ -58,7 +58,7 @@ export interface CheckInDetectPointView {
 
 export interface SubmitCheckInPayload {
   lineUserId: string;
-  checkInPointId: number;
+  checkInPointId: string | number;
   gpsLocation: string;
   checkInPicture: Blob;
   filename?: string;
@@ -76,6 +76,12 @@ function pickString(v: unknown): string {
 
 function pickNumber(v: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : Number(v ?? 0) || 0;
+}
+
+function pickIdLikeString(v: unknown): string {
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return "";
 }
 
 function pickBoolean(v: unknown): boolean {
@@ -124,7 +130,7 @@ function normalizeDetectPoints(result: unknown): CheckInDetectPointView[] {
     .map((raw) => {
       const row = (raw ?? {}) as Record<string, unknown>;
       return {
-        pointId: pickNumber(row.point_id ?? row.pointId ?? row.id),
+        pointId: pickIdLikeString(row.point_id ?? row.pointId ?? row.id),
         name: pickString(row.name),
         location: pickString(row.location),
         address: pickString(row.address),
@@ -134,7 +140,7 @@ function normalizeDetectPoints(result: unknown): CheckInDetectPointView[] {
         isTestPoint: pickBoolean(row.is_test ?? row.test_mode) || pickString(row.name).includes("測試"),
       };
     })
-    .filter((row) => row.pointId > 0 && row.name.length > 0);
+    .filter((row) => row.pointId.length > 0 && row.name.length > 0);
 }
 
 /** GET /api/check-in/areas?filter[name]= */
