@@ -46,7 +46,9 @@ const isBusy = computed(() =>
 );
 
 const pointLogo = computed(() => {
-  return nearbyPoint.value?.isTestPoint ? testLogo : storeLogo;
+  const name = (nearbyPoint.value?.name ?? "").toLowerCase().replace(/\s+/g, "");
+  const is85 = name.includes("85度c") || name.includes("85°c") || name.includes("85c");
+  return is85 ? storeLogo : testLogo;
 });
 
 const showGpsAndCamera = computed(() =>
