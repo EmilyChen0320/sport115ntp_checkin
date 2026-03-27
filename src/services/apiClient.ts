@@ -47,6 +47,23 @@ export interface CheckInAreaPointView {
   location: string;
 }
 
+export interface CheckInDetectPointView {
+  pointId: number;
+  name: string;
+  location: string;
+  address: string;
+  alreadyCheckedByTeam: boolean;
+  isTestPoint: boolean;
+}
+
+export interface SubmitCheckInPayload {
+  lineUserId: string;
+  checkInPointId: number;
+  gpsLocation: string;
+  checkInPicture: Blob;
+  filename?: string;
+}
+
 type CheckInAreaResult = {
   id?: unknown;
   name?: unknown;
@@ -55,6 +72,18 @@ type CheckInAreaResult = {
 
 function pickString(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
+}
+
+function pickNumber(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : Number(v ?? 0) || 0;
+}
+
+function pickBoolean(v: unknown): boolean {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v !== 0;
+  if (typeof v !== "string") return false;
+  const s = v.trim().toLowerCase();
+  return s === "1" || s === "true" || s === "yes" || s === "y";
 }
 
 function parseDistrictFromAddress(address: string): string {
@@ -89,12 +118,52 @@ function normalizeAreaPoints(result: unknown): CheckInAreaPointView[] {
   return rows;
 }
 
+function normalizeDetectPoints(result: unknown): CheckInDetectPointView[] {
+  const list = Array.isArray(result) ? result : result ? [result] : [];
+  return list
+    .map((raw) => {
+      const row = (raw ?? {}) as Record<string, unknown>;
+      return {
+        pointId: pickNumber(row.point_id ?? row.pointId ?? row.id),
+        name: pickString(row.name),
+        location: pickString(row.location),
+        address: pickString(row.address),
+        alreadyCheckedByTeam: pickBoolean(
+          row.already_checked_by_team ?? row.is_checked_by_team ?? row.is_checked ?? row.checked,
+        ),
+        isTestPoint: pickBoolean(row.is_test ?? row.test_mode) || pickString(row.name).includes("測試"),
+      };
+    })
+    .filter((row) => row.pointId > 0 && row.name.length > 0);
+}
+
 /** GET /api/check-in/areas?filter[name]= */
 export async function getCheckInAreas(filterName?: string): Promise<CheckInAreaPointView[]> {
   const filter = filterName?.trim() ?? "";
   const params = filter ? { "filter[name]": filter } : undefined;
   const { data } = await apiClient.get("/api/check-in/areas", { params });
   return normalizeAreaPoints((data as { result?: unknown })?.result);
+}
+
+/** GET /api/check-in/detect?gps_location={lat,lng} */
+export async function detectNearbyPoints(gpsLocation: string): Promise<CheckInDetectPointView[]> {
+  const location = gpsLocation.trim();
+  const params = location ? { gps_location: location } : undefined;
+  const { data } = await apiClient.get("/api/check-in/detect", { params });
+  return normalizeDetectPoints((data as { result?: unknown })?.result);
+}
+
+/** POST /api/check-in */
+export async function submitCheckIn(payload: SubmitCheckInPayload): Promise<unknown> {
+  const formData = new FormData();
+  formData.append("line_user_id", payload.lineUserId);
+  formData.append("check_in_point_id", String(payload.checkInPointId));
+  formData.append("gps_location", payload.gpsLocation);
+  formData.append("check_in_picture", payload.checkInPicture, payload.filename ?? "checkin.jpg");
+  const { data } = await apiClient.post("/api/check-in", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
 }
 
 /** POST /api/check-in/teams */

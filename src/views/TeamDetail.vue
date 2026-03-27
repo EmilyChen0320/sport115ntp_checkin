@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import teamCreatedHero from "../assets/images/teamcreatedheroimage.png";
 import teamCreatedContainer from "../assets/images/teamcreatedContainer.png";
+import teamInviteBg from "../assets/images/teaminvitebg.png";
 import avatarFallback from "../assets/images/avatar.png";
 import { useTeamStore } from "../stores/teamStore";
 import { liffService } from "../services/liffService";
@@ -66,7 +67,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="mx-auto min-h-screen w-full max-w-[393px] bg-[#f5f1f7] px-4 pt-[max(10px,env(safe-area-inset-top))] pb-6 text-[#333]">
+  <main class="relative min-h-screen w-full overflow-hidden text-[#333]">
+    <img :src="teamInviteBg" alt="" class="absolute inset-0 h-full w-full object-cover" />
+    <section class="relative z-10 mx-auto min-h-screen w-full max-w-[393px] px-4 pt-[max(10px,env(safe-area-inset-top))] pb-6">
     <header class="relative flex items-center justify-center py-2">
       <button
         type="button"
@@ -195,5 +198,6 @@ onMounted(() => {
     </template>
 
     <p v-else-if="isLoading" class="mt-6 text-center text-[14px] text-[#666]">載入隊伍資料中…</p>
+    </section>
   </main>
 </template>

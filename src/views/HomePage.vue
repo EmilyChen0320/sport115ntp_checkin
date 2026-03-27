@@ -32,7 +32,7 @@ async function safePush(to: { name: string; query?: Record<string, string> }) {
 }
 
 function routeForAfter(after: "checkin" | "progress") {
-  return after === "checkin" ? { name: "checkPlace" } : { name: "teamDetail" };
+  return after === "checkin" ? { name: "checkIn" } : { name: "teamDetail" };
 }
 
 const showNoTeamPopup = ref(false);
@@ -93,7 +93,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="mx-auto min-h-screen w-full max-w-[393px] bg-linear-to-b from-[#e4d1f8] to-white text-[#333333]">
+  <main class="min-h-screen w-full bg-linear-to-b from-[#e4d1f8] to-white text-[#333333]">
+    <section class="mx-auto w-full max-w-[393px]">
     <section class="relative px-4 pt-[max(8px,env(safe-area-inset-top))]">
       <img :src="heroImage" alt="傳聖火主視覺" class="block w-full h-auto" />
       <button
@@ -158,6 +159,7 @@ onMounted(() => {
         </button>
       </div>
       <p v-if="isCheckingTeam" class="mt-3 text-center text-[12px] text-[#674598]">處理中，請稍候…</p>
+    </section>
     </section>
   </main>
 

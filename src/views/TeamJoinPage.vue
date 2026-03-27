@@ -158,10 +158,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <main
-    class="mx-auto min-h-screen w-full max-w-[393px] bg-cover bg-top bg-no-repeat px-4 pt-[max(12px,env(safe-area-inset-top))] pb-8 text-[#333]"
-    :style="{ backgroundImage: `url(${teamInviteBg})`, backgroundColor: '#f5f1f7' }"
-  >
+  <main class="relative min-h-screen w-full overflow-hidden text-[#333]">
+    <img :src="teamInviteBg" alt="" class="absolute inset-0 h-full w-full object-cover" />
+    <section class="relative z-10 mx-auto min-h-screen w-full max-w-[393px] px-4 pt-[max(12px,env(safe-area-inset-top))] pb-8">
     <header class="relative flex items-center justify-center py-2">
       <button
         type="button"
@@ -300,6 +299,7 @@ onMounted(() => {
           </button>
         </div>
       </div>
+    </section>
     </section>
   </main>
 </template>

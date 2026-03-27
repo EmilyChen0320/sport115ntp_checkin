@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { RouteLocationNormalized } from "vue-router";
 import HomePage from "../views/HomePage.vue";
+import CheckInPage from "../views/CheckInPage.vue";
 import CheckPlacePage from "../views/CheckPlacePage.vue";
 import CheckEventPage from "../views/CheckEventPage.vue";
 import CreateTeamPage from "../views/CreateTeamPage.vue";
@@ -79,6 +80,11 @@ export const router = createRouter({
       path: "/",
       name: "home",
       component: HomePage,
+    },
+    {
+      path: "/check-in",
+      name: "checkIn",
+      component: CheckInPage,
     },
     {
       path: "/check-place",
