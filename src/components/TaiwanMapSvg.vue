@@ -22,9 +22,10 @@ const completedIds = computed(() => {
 const FULL_VIEWBOX = "0 0 1120 1295";
 const ISLAND_IDS = ["kinmen-county", "penghu-county", "lienchiang-county"] as const;
 const ISLAND_SET = new Set<string>(ISLAND_IDS);
-const MAINLAND_SCALE = 1.28;
-const MAINLAND_TX = -377;
-const MAINLAND_TY = -383;
+const MAINLAND_SCALE = 1.33;
+const MAINLAND_TX = -392;
+const MAINLAND_TY = -398;
+const ISLAND_GRAPH_SCALE_MULT = 1;
 
 /**
  * 離島 bbox（由 svg-path-bounds 精確計算）+ 定位參數
@@ -33,23 +34,27 @@ const MAINLAND_TY = -383;
  */
 const ISLAND_INSET: Record<
   string,
-  { minX: number; minY: number; w: number; h: number; tx: number; ty: number; scale: number; labelX: number; labelY: number }
+  { minX: number; minY: number; w: number; h: number; tx: number; ty: number; scale: number }
 > = {
   "lienchiang-county": {
     minX: 449.1, minY: 1.0, w: 156.2, h: 129.3,
-    tx: 30, ty: 30, scale: 1.2,
-    labelX: 124, labelY: 108,
+    tx: 30, ty: 30, scale: 1.85,
   },
   "kinmen-county": {
     minX: 1.0, minY: 407.6, w: 333.3, h: 175.2,
-    tx: 15, ty: 250, scale: 0.6,
-    labelX: 115, labelY: 303,
+    tx: 15, ty: 310, scale: 1.1,
   },
   "penghu-county": {
     minX: 289.5, minY: 764.9, w: 95.7, h: 162.5,
-    tx: 50, ty: 420, scale: 1.3,
-    labelX: 112, labelY: 526,
+    tx: 20, ty: 620, scale: 1.95,
   },
+};
+
+// 各島文字（以 bbox 中心為局部座標）微調，確保文字落在圖形上
+const ISLAND_LABEL_OFFSET: Record<string, { dx: number; dy: number }> = {
+  "kinmen-county": { dx: -46, dy: 36 },
+  "lienchiang-county": { dx: -20, dy: 0 },
+  "penghu-county": { dx: -20, dy: -6 },
 };
 
 const TW_LABELS: Record<string, { text: string; x: number; y: number; size?: number }> = {
@@ -87,7 +92,32 @@ const islandLocations = computed(() =>
 function islandPathTransform(id: string): string {
   const cfg = ISLAND_INSET[id];
   if (!cfg) return "";
-  return `translate(${cfg.tx} ${cfg.ty}) scale(${cfg.scale}) translate(${-cfg.minX} ${-cfg.minY})`;
+  return `translate(${cfg.tx} ${cfg.ty}) scale(${cfg.scale * ISLAND_GRAPH_SCALE_MULT}) translate(${-cfg.minX} ${-cfg.minY})`;
+}
+
+function islandTextX(id: string): number {
+  const cfg = ISLAND_INSET[id];
+  if (!cfg) return 0;
+  const off = ISLAND_LABEL_OFFSET[id] ?? { dx: 0, dy: 0 };
+  return cfg.minX + cfg.w / 2 + off.dx;
+}
+
+function islandTextY(id: string): number {
+  const cfg = ISLAND_INSET[id];
+  if (!cfg) return 0;
+  const off = ISLAND_LABEL_OFFSET[id] ?? { dx: 0, dy: 0 };
+  return cfg.minY + cfg.h / 2 + off.dy;
+}
+
+function islandTextFontSize(id: string): number {
+  const cfg = ISLAND_INSET[id];
+  if (!cfg) return 20;
+  // 實際渲染字級會乘上 islandPathTransform 的 scale，所以做反向補償
+  // 本島文字在 MAINLAND group 內會再乘上 MAINLAND_SCALE，
+  // 所以離島要補償到「與本島相同的最終視覺字級」。
+  const target = (TW_LABELS[id]?.size ?? 20) * MAINLAND_SCALE;
+  const s = cfg.scale * ISLAND_GRAPH_SCALE_MULT;
+  return target / s;
 }
 </script>
 
@@ -139,21 +169,21 @@ function islandPathTransform(id: string): string {
           stroke-width="1.2"
           stroke-linejoin="round"
         />
+        <text
+          :x="islandTextX(loc.id)"
+          :y="islandTextY(loc.id)"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-weight="600"
+          :font-size="islandTextFontSize(loc.id)"
+          fill="#5a4a73"
+          stroke="#ffffff"
+          stroke-width="3"
+          paint-order="stroke"
+        >
+          {{ TW_LABELS[loc.id]?.text ?? "" }}
+        </text>
       </g>
-      <text
-        :x="ISLAND_INSET[loc.id]?.labelX ?? 0"
-        :y="ISLAND_INSET[loc.id]?.labelY ?? 0"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-weight="600"
-        font-size="20"
-        fill="#5a4a73"
-        stroke="#ffffff"
-        stroke-width="3"
-        paint-order="stroke"
-      >
-        {{ TW_LABELS[loc.id]?.text ?? "" }}
-      </text>
     </template>
   </svg>
 </template>

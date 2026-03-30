@@ -203,9 +203,9 @@ onMounted(async () => {
               class="mt-4 rounded-[10px] border border-[#ededed] bg-[rgba(188,169,209,0.1)] p-2 shadow-[0px_0px_1px_rgba(0,0,0,0.15)]"
             >
               <div
-                class="flex min-h-[300px] w-full items-center justify-center px-1 py-1 sm:min-h-[340px]"
+                class="flex min-h-[300px] w-full items-center justify-center px-1 py-1 sm:min-h-[360px]"
               >
-                <div class="w-full max-w-[100%] [&_svg]:min-h-[260px] [&_svg]:min-w-0">
+                <div class="w-full max-w-full [&_svg]:min-h-[380px] [&_svg]:min-w-0">
                   <TaiwanMapSvg v-if="tab === 'taiwan'" :completed-area-names="completedForMap" />
                   <NewTaipeiMapSvg v-else :completed-area-names="completedForMap" />
                 </div>

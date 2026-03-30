@@ -8,7 +8,8 @@ const props = defineProps<{
 }>();
 
 const FILL_DONE = "#6ACDCB";
-const FILL_TODO = "#A2D6D5";
+// 依照你提供的圖：A2D6D5，並搭配約 40% 透明度
+const FILL_TODO = "rgba(162, 214, 213, 0.4)";
 
 const completed = computed(() => {
   const s = new Set<string>();
@@ -20,7 +21,8 @@ const completed = computed(() => {
 
 const LABELS: Record<string, { x: number; y: number }> = {
   板橋區: { x: 151, y: 315.7 },
-  三重區: { x: 196.6, y: 224.7 },
+  // 解決與「蘆洲區」重疊：三重往下往右
+  三重區: { x: 206.8, y: 235.5 },
   中和區: { x: 197.5, y: 295.6 },
   永和區: { x: 211.3, y: 280.6 },
   新莊區: { x: 161.9, y: 280.5 },
@@ -47,7 +49,8 @@ const LABELS: Record<string, { x: number; y: number }> = {
   貢寮區: { x: 548.1, y: 249.6 },
   金山區: { x: 202.2, y: 84 },
   萬里區: { x: 282.9, y: 93.1 },
-  烏來區: { x: 253.3, y: 475.7 },
+  // 烏來往左一點
+  烏來區: { x: 244.2, y: 475.7 },
 };
 </script>
 
