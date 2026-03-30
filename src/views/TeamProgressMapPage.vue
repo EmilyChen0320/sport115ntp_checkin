@@ -46,9 +46,15 @@ const statusTitle = computed(() => {
   if (!isFullTeam.value) return "尚未成隊";
   const ev = currentEv.value;
   const n = ev?.completedAreas ?? 0;
-  const unit = tab.value === "taiwan" ? "縣市" : "行政區";
-  if (ev?.isCompleted) return `已完成 ${n} 個${unit}，達成抽獎門檻！`;
-  return `已完成 ${n} 個${unit}，繼續加油！`;
+  // 抽獎門檻：全臺22縣市完成 5 個、 新北市29區完成 10 個
+  // （文案要跟 Figma 一致：未達成時顯示「還差 Y 區/縣市」）
+  const threshold = tab.value === "taiwan" ? 5 : 10;
+  const unitLong = tab.value === "taiwan" ? "縣市" : "行政區";
+  const unitShort = tab.value === "taiwan" ? "縣市" : "區";
+
+  if (ev?.isCompleted) return `已完成 ${n} ${unitShort}，達成抽獎門檻！`;
+  const remaining = Math.max(0, threshold - n);
+  return `已完成 ${n} ${unitShort}，還差 ${remaining} ${unitLong}達成抽獎門檻！`;
 });
 
 const showLotteryBadge = computed(() => isFullTeam.value && Boolean(currentEv.value?.isCompleted));
