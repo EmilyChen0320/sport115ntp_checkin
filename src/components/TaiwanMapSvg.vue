@@ -54,7 +54,7 @@ const ISLAND_INSET: Record<
 const ISLAND_LABEL_OFFSET: Record<string, { dx: number; dy: number }> = {
   "kinmen-county": { dx: -46, dy: 36 },
   "lienchiang-county": { dx: -20, dy: 0 },
-  "penghu-county": { dx: -20, dy: -6 },
+  "penghu-county": { dx: 85, dy: 10 },
 };
 
 const TW_LABELS: Record<string, { text: string; x: number; y: number; size?: number }> = {
@@ -99,6 +99,10 @@ function islandTextX(id: string): number {
   const cfg = ISLAND_INSET[id];
   if (!cfg) return 0;
   const off = ISLAND_LABEL_OFFSET[id] ?? { dx: 0, dy: 0 };
+  if (id === "penghu-county") {
+    // 用 bbox 左緣當作 x；搭配 anchor="end" 讓文字出現在左側
+    return cfg.minX + off.dx;
+  }
   return cfg.minX + cfg.w / 2 + off.dx;
 }
 
@@ -107,6 +111,11 @@ function islandTextY(id: string): number {
   if (!cfg) return 0;
   const off = ISLAND_LABEL_OFFSET[id] ?? { dx: 0, dy: 0 };
   return cfg.minY + cfg.h / 2 + off.dy;
+}
+
+function islandTextAnchor(id: string): "middle" | "end" {
+  if (id === "penghu-county") return "end";
+  return "middle";
 }
 
 function islandTextFontSize(id: string): number {
@@ -172,7 +181,7 @@ function islandTextFontSize(id: string): number {
         <text
           :x="islandTextX(loc.id)"
           :y="islandTextY(loc.id)"
-          text-anchor="middle"
+          :text-anchor="islandTextAnchor(loc.id)"
           dominant-baseline="middle"
           font-weight="600"
           :font-size="islandTextFontSize(loc.id)"
