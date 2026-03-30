@@ -1,9 +1,9 @@
 import axios, { type AxiosInstance } from "axios";
 import avatarFallback from "../assets/images/avatar.png";
 import { getEndpointConfig } from "../config/endpoint";
-import type { TeamProgressView } from "../types/teamProgress";
+import type { EventAreaStatView, EventStatView, TeamProgressView } from "../types/teamProgress";
 import { fetchTeamProgress as requestTeamProgress } from "./teamProgressApi";
-import { createMockTeamProgress } from "./teamProgressMock";
+import { createMockEventsProgress, createMockTeamProgress } from "./teamProgressMock";
 
 const endpoint = getEndpointConfig();
 
@@ -17,7 +17,55 @@ export const apiClient: AxiosInstance = axios.create({
     : undefined,
 });
 
-export type { TeamMemberView, TeamProgressView } from "../types/teamProgress";
+export type { EventAreaStatView, EventStatView, TeamMemberView, TeamProgressView } from "../types/teamProgress";
+
+function unwrapApiArray(data: unknown): unknown[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    const o = data as Record<string, unknown>;
+    if (Array.isArray(o.result)) return o.result;
+    if (Array.isArray(o.data)) return o.data;
+  }
+  return [];
+}
+
+function normalizeEventAreaStat(row: Record<string, unknown>): EventAreaStatView {
+  return {
+    areaId: pickNumber(row.area_id ?? row.areaId),
+    areaName: (typeof row.area_name === "string" ? row.area_name : typeof row.areaName === "string" ? row.areaName : "").trim() || "-",
+    completedTeams: pickNumber(row.completed_teams ?? row.completedTeams),
+  };
+}
+
+function normalizeEventStat(row: Record<string, unknown>): EventStatView {
+  const areasRaw = row.areas;
+  const areasList = Array.isArray(areasRaw) ? areasRaw : [];
+  const areas = areasList
+    .filter((a): a is Record<string, unknown> => typeof a === "object" && a !== null)
+    .map((a) => normalizeEventAreaStat(a));
+  return {
+    eventId: pickNumber(row.event_id ?? row.eventId),
+    eventName:
+      (typeof row.event_name === "string" ? row.event_name : typeof row.eventName === "string" ? row.eventName : "").trim() ||
+      "",
+    completedTeams: pickNumber(row.completed_teams ?? row.completedTeams),
+    totalTeams: pickNumber(row.total_teams ?? row.totalTeams),
+    areas,
+  };
+}
+
+/** GET /api/check-in/events/progress */
+export async function getEventsProgress(): Promise<EventStatView[]> {
+  const cfg = getEndpointConfig();
+  if (cfg.useMockTeamApi) {
+    return createMockEventsProgress();
+  }
+  const { data } = await apiClient.get<unknown>("/api/check-in/events/progress");
+  const raw = unwrapApiArray(data);
+  return raw
+    .filter((row): row is Record<string, unknown> => typeof row === "object" && row !== null)
+    .map((row) => normalizeEventStat(row));
+}
 
 export interface CreateTeamPayload {
   name: string;

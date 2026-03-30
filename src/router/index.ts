@@ -7,6 +7,8 @@ import CheckEventPage from "../views/CheckEventPage.vue";
 import CreateTeamPage from "../views/CreateTeamPage.vue";
 import TeamDetailPage from "../views/TeamDetail.vue";
 import TeamJoinPage from "../views/TeamJoinPage.vue";
+import ProgressOverviewPage from "../views/ProgressOverviewPage.vue";
+import TeamProgressMapPage from "../views/TeamProgressMapPage.vue";
 
 function firstQueryValue(q: RouteLocationNormalized["query"][string]): string {
   if (typeof q === "string") return q;
@@ -105,6 +107,16 @@ export const router = createRouter({
       path: "/team",
       name: "teamDetail",
       component: TeamDetailPage,
+    },
+    {
+      path: "/team/progress",
+      name: "teamProgressMap",
+      component: TeamProgressMapPage,
+    },
+    {
+      path: "/progress",
+      name: "progressOverview",
+      component: ProgressOverviewPage,
     },
     {
       path: "/team/join",

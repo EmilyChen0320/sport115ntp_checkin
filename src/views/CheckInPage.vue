@@ -60,6 +60,18 @@ const showCameraArea = computed(() =>
   ["point-found", "camera", "compositing", "uploading", "upload-failed"].includes(phase.value),
 );
 
+const successAreaTitle = computed(() => {
+  const address = (nearbyPoint.value?.address ?? "").trim();
+  const name = (nearbyPoint.value?.name ?? "").trim();
+  const location = (nearbyPoint.value?.location ?? "").trim();
+  const source = address || location || name;
+  const districtMatch = source.match(/([^\s縣市]{1,8}(?:區|鄉|鎮|市))/);
+  const district = districtMatch?.[1] ?? "";
+  if (district) return `${district}「傳遞」完成`;
+  if (name) return `${name}「傳遞」完成`;
+  return "傳遞完成";
+});
+
 function setPhase(next: CheckInPhase, message = "") {
   phase.value = next;
   errorMessage.value = message;
@@ -298,7 +310,9 @@ onBeforeUnmount(() => {
         >
           ‹
         </button>
-        <h1 class="text-[22px] font-bold leading-none">聖火傳遞打卡</h1>
+        <h1 class="text-[22px] font-bold leading-none">
+          {{ phase === "success" ? successAreaTitle : "聖火傳遞打卡" }}
+        </h1>
       </header>
 
       <!-- loading -->
@@ -349,22 +363,28 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- success -->
-      <div v-else-if="phase === 'success'" class="mt-5 space-y-3 rounded-2xl bg-white/90 p-4 py-6 text-center shadow-[0_10px_24px_rgba(0,0,0,0.1)]">
-        <p class="text-[18px] font-bold text-[#5b3e84]">傳遞完成！</p>
-        <p class="text-[13px] text-[#666]">已完成此地點打卡，恭喜獲得一次傳遞紀錄。</p>
+      <div v-else-if="phase === 'success'" class="mt-6 space-y-4 text-center">
+        <p class="text-[14px] text-[#666]">已完成此地點打卡，恭喜獲得一次傳遞紀錄。</p>
         <img
           v-if="compositedPreviewUrl"
           :src="compositedPreviewUrl"
           alt="打卡照片"
-          class="mx-auto w-full max-w-[290px] rounded-xl border border-[#ddd]"
+          class="mx-auto w-full max-w-[360px] rounded-xl border border-[#ddd]"
         />
         <button
           type="button"
-          class="mx-auto block rounded-full bg-[#674598] px-5 py-2 text-[14px] font-bold text-white"
+          class="mx-auto block rounded-full bg-[#674598] px-6 py-2.5 text-[15px] font-bold text-white"
           @click="router.push({ name: 'teamDetail' })"
         >
           返回我的隊伍
         </button>
+      </div>
+
+      <div
+        v-if="phase === 'success'"
+        class="mt-auto -mx-4 bg-[#BCA9D1] px-3 py-2 text-center text-[12px] font-medium text-black"
+      >
+        下載圖片並分享至『新北運動聚點』FB指定貼文，還可獲得個人獎抽獎機會！
       </div>
 
       <!-- GPS + Camera composite layout (detecting / no-point / point-found / camera / compositing / uploading / upload-failed) -->
@@ -485,17 +505,20 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- camera actions (outside photo frame) -->
-        <div v-if="phase === 'camera'" class="mt-3 flex justify-center gap-2">
+        <div
+          v-if="phase === 'camera'"
+          class="mt-8 mb-[max(20px,env(safe-area-inset-bottom))] flex w-full gap-2 px-1"
+        >
           <button
             type="button"
-            class="rounded-full bg-[#9f8fb2] px-4 py-1.5 text-[12px] font-bold text-white"
+            class="flex-1 rounded-full bg-[#9f8fb2] px-6 py-2.5 text-[14px] font-bold text-white"
             @click.stop="onCameraAreaClick"
           >
             重拍
           </button>
           <button
             type="button"
-            class="rounded-full bg-[#674598] px-4 py-1.5 text-[12px] font-bold text-white"
+            class="flex-1 rounded-full bg-[#674598] px-6 py-2.5 text-[14px] font-bold text-white"
             :disabled="isBusy || !compositedBlob"
             @click.stop="doSubmit"
           >

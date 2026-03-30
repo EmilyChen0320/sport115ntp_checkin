@@ -54,7 +54,7 @@ function goHome() {
 }
 
 function openMapProgress() {
-  router.push({ name: "checkPlace" });
+  router.push({ name: "progressOverview" });
 }
 
 /** 不可在此 await API：須在點擊同一個同步流程內呼叫 shareTargetPicker */

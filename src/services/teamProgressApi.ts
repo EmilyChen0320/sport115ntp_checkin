@@ -1,5 +1,11 @@
 import axios, { type AxiosInstance, isAxiosError } from "axios";
-import type { TeamProgressView, TeamMemberCheckInPointView, TeamMemberView } from "../types/teamProgress";
+import type {
+  AreaProgressView,
+  EventProgressView,
+  TeamProgressView,
+  TeamMemberCheckInPointView,
+  TeamMemberView,
+} from "../types/teamProgress";
 
 /** 後端可能使用不同欄位名；此處容錯正規化 */
 export type TeamProgressApiPayload = Record<string, unknown>;
@@ -32,6 +38,53 @@ function pickNumber(...values: unknown[]): number {
     }
   }
   return 0;
+}
+
+function pickBoolean(...values: unknown[]): boolean {
+  for (const v of values) {
+    if (typeof v === "boolean") return v;
+    if (typeof v === "number") return v !== 0;
+    if (typeof v !== "string") continue;
+    const s = v.trim().toLowerCase();
+    if (s === "1" || s === "true" || s === "yes" || s === "y") return true;
+  }
+  return false;
+}
+
+function normalizeAreaProgress(row: Record<string, unknown>): AreaProgressView {
+  return {
+    areaId: pickNumber(row.area_id, row.areaId, row.id),
+    areaName: pickString(row.area_name, row.areaName) || "-",
+    isCompleted: pickBoolean(row.is_completed, row.isCompleted, row.completed),
+  };
+}
+
+function normalizeEventProgressRow(row: Record<string, unknown>): EventProgressView {
+  const areasRaw = row.areas;
+  const areasList = Array.isArray(areasRaw) ? areasRaw : [];
+  const areas: AreaProgressView[] = areasList
+    .filter((a): a is Record<string, unknown> => typeof a === "object" && a !== null)
+    .map((a) => normalizeAreaProgress(a));
+
+  const countedDone = areas.filter((a) => a.isCompleted).length;
+  const totalFromApi = pickNumber(row.total_areas, row.totalAreas);
+  const doneFromApi = pickNumber(row.completed_areas, row.completedAreas);
+
+  return {
+    eventId: pickNumber(row.event_id, row.eventId),
+    eventName: pickString(row.event_name, row.eventName) || "",
+    totalAreas: totalFromApi > 0 ? totalFromApi : areas.length,
+    completedAreas: doneFromApi > 0 ? doneFromApi : countedDone,
+    isCompleted: pickBoolean(row.is_completed, row.isCompleted),
+    areas,
+  };
+}
+
+function normalizeProgressList(raw: unknown): EventProgressView[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((row): row is Record<string, unknown> => typeof row === "object" && row !== null)
+    .map((row) => normalizeEventProgressRow(row));
 }
 
 function normalizeMemberCheckInPoint(row: Record<string, unknown>): TeamMemberCheckInPointView {
@@ -139,7 +192,7 @@ export function normalizeTeamProgressPayload(payload: TeamProgressApiPayload, fa
     root.created_time,
   );
 
-  const taiwan22Completed = pickNumber(
+  let taiwan22Completed = pickNumber(
     root.taiwan22_completed,
     root.taiwan22Completed,
     root.taiwan22_count,
@@ -150,7 +203,7 @@ export function normalizeTeamProgressPayload(payload: TeamProgressApiPayload, fa
     teamBlock.taiwan22Completed,
   );
 
-  const newTaipei29Completed = pickNumber(
+  let newTaipei29Completed = pickNumber(
     root.newtaipei29_completed,
     root.newTaipei29Completed,
     root.newTaipei29_completed,
@@ -160,6 +213,24 @@ export function normalizeTeamProgressPayload(payload: TeamProgressApiPayload, fa
     teamBlock.newtaipei29_completed,
     teamBlock.newTaipei29Completed,
   );
+
+  const progressRaw = root.progress ?? teamBlock.progress;
+  const progress = normalizeProgressList(progressRaw);
+
+  for (const ev of progress) {
+    const n = ev.areas.length;
+    const isTaiwan = ev.totalAreas === 22 || n === 22 || (/22|全臺|臺灣|台灣/.test(ev.eventName) && !/新北/.test(ev.eventName));
+    const isNewTaipei = ev.totalAreas === 29 || n === 29 || /新北|29/.test(ev.eventName);
+    if (isTaiwan) {
+      taiwan22Completed = Math.min(22, ev.completedAreas > 0 ? ev.completedAreas : taiwan22Completed);
+    }
+    if (isNewTaipei) {
+      newTaipei29Completed = Math.min(29, ev.completedAreas > 0 ? ev.completedAreas : newTaipei29Completed);
+    }
+  }
+
+  const teamIconUrl = pickString(root.icon, teamBlock.icon, root.team_icon, teamBlock.team_icon);
+  const memberCountFromApi = pickNumber(root.member_count, teamBlock.member_count);
 
   const membersRaw = root.members ?? teamBlock.members ?? root.team_members ?? teamBlock.team_members;
   const membersList = Array.isArray(membersRaw) ? membersRaw : [];
@@ -175,6 +246,9 @@ export function normalizeTeamProgressPayload(payload: TeamProgressApiPayload, fa
     taiwan22Completed: Math.min(taiwan22Completed, 22),
     newTaipei29Completed: Math.min(newTaipei29Completed, 29),
     members,
+    teamIconUrl: teamIconUrl || "",
+    memberCountFromApi: memberCountFromApi > 0 ? memberCountFromApi : members.length,
+    progress,
   };
 }
 
