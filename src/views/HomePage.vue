@@ -100,7 +100,7 @@ onMounted(() => {
       <button
         type="button"
         aria-label="查看活動辦法"
-        class="tap-feedback absolute right-4 top-[129px] block w-[152px] max-w-[48%] rounded-full disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="tap-feedback absolute right-4 top-[128px] block w-[152px] max-w-[48%] rounded-full disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
         :disabled="isRouting || isCheckingTeam"
         @click="onCheckEventClick"
       >
