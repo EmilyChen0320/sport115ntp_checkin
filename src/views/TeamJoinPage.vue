@@ -170,7 +170,7 @@ onMounted(() => {
       >
         ×
       </button>
-      <h1 class="text-[28px] font-extrabold leading-none tracking-tight text-[#222]">加入隊伍</h1>
+      <h1 class="text-[22px] font-extrabold leading-none tracking-tight text-[#222]">加入隊伍</h1>
     </header>
 
     <div

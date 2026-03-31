@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import teamCreatedHero from "../assets/images/teamcreatedheroimage.png";
+import teamCreatedTorch from "../assets/images/teamcreatedtorch.png";
 import teamCreatedContainer from "../assets/images/teamcreatedContainer.png";
 import teamInviteBg from "../assets/images/teaminvitebg.png";
 import avatarFallback from "../assets/images/avatar.png";
@@ -117,11 +118,24 @@ onMounted(() => {
     </div>
 
     <template v-else-if="teamData">
-      <section class="mt-3 overflow-hidden">
-        <img :src="teamCreatedHero" alt="115年全國身心障礙國民運動會 無礙逐光" class="block w-full" />
+      <section class="relative z-10 mt-3 flex items-stretch gap-1">
+        <div class="flex min-h-0 min-w-0 flex-1 items-center overflow-hidden">
+          <img
+            :src="teamCreatedHero"
+            alt="115年全國身心障礙國民運動會 無礙逐光"
+            class="block w-full"
+          />
+        </div>
+        <div class="relative z-20 w-[44%] max-w-[178px] shrink-0">
+          <img
+            :src="teamCreatedTorch"
+            alt=""
+            class="pointer-events-none relative -mb-[38px] block w-full"
+          />
+        </div>
       </section>
 
-      <section class="relative mt-0">
+      <section class="relative z-0 mt-0">
         <img :src="teamCreatedContainer" alt="" class="block w-full" role="presentation" />
         <div class="absolute inset-0 flex flex-col justify-center px-4 py-2">
           <p class="text-[20px] font-extrabold leading-none text-[#333]">{{ teamName }}</p>

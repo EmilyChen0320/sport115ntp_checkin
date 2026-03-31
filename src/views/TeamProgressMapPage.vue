@@ -98,7 +98,7 @@ onMounted(async () => {
         >
           ‹
         </button>
-        <h1 class="text-[17px] font-semibold leading-none">我的隊伍</h1>
+        <h1 class="text-[22px] font-semibold leading-none">我的隊伍</h1>
       </header>
 
       <p v-if="lastError" class="mt-2 rounded-lg bg-[#ffe8e8] px-3 py-2 text-[13px] text-[#a40000]">

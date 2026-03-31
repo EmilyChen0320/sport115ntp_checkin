@@ -210,7 +210,7 @@ watch(
       >
         ‹
       </button>
-      <h1 class="text-[18px] font-bold leading-none">我要組隊</h1>
+      <h1 class="text-[22px] font-bold leading-none">我要組隊</h1>
     </header>
 
     <section
