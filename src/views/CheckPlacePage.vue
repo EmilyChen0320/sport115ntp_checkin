@@ -52,7 +52,7 @@ onMounted(() => {
       >
         ‹
       </button>
-      <h1 class="text-[26px] font-bold leading-none">可打卡地點</h1>
+      <h1 class="text-[22px] font-bold leading-none">可打卡地點</h1>
     </header>
 
     <section class="mt-3">

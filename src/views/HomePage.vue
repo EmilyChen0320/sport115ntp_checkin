@@ -95,12 +95,12 @@ onMounted(() => {
 <template>
   <main class="min-h-screen w-full bg-linear-to-b from-[#e4d1f8] to-white text-[#333333]">
     <section class="mx-auto w-full max-w-[393px]">
-    <section class="relative px-4 pt-[max(8px,env(safe-area-inset-top))]">
+    <section class="relative px-4 pt-[max(16px,env(safe-area-inset-top))]">
       <img :src="heroImage" alt="傳聖火主視覺" class="block w-full h-auto" />
       <button
         type="button"
         aria-label="查看活動辦法"
-        class="tap-feedback absolute right-8 top-[132px] block w-[160px] max-w-[49%] rounded-full disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="tap-feedback absolute right-4 top-[130px] block w-[160px] max-w-[49%] rounded-full disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
         :disabled="isRouting || isCheckingTeam"
         @click="onCheckEventClick"
       >
