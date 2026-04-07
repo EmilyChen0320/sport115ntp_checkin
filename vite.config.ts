@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET?.trim();
 
   return {
-    base: "/liff/check_in/",
+    base: "/liff/check_in/index/",
     plugins: [vue()],
     publicDir: "public",
     server: {
