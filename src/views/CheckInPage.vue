@@ -415,7 +415,7 @@ onBeforeUnmount(() => {
           class="mx-auto h-[96px] w-[96px] rounded-full object-cover"
           @error="onPointLogoError"
         />
-        <p class="text-[16px] font-bold">此地點已由隊員完成</p>
+        <p class="text-[16px] font-bold">此地點已被您或您的隊員完成！</p>
         <p class="text-[13px] text-[#666]">{{ nearbyPoint?.name }}</p>
         <button
           type="button"
