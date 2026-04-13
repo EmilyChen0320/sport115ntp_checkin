@@ -162,6 +162,28 @@ class LiffService {
     }
   }
 
+  async shareCheckInPhoto(options: { file: File; title?: string; text?: string }): Promise<WebShareResult> {
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return "unavailable";
+    }
+    try {
+      const payload: ShareData = {
+        files: [options.file],
+        title: options.title ?? "打卡完成",
+        text: options.text ?? "",
+      };
+      if (typeof navigator.canShare === "function" && !navigator.canShare({ files: payload.files })) {
+        return "unavailable";
+      }
+      await navigator.share(payload);
+      return "shared";
+    } catch (e) {
+      const name = e instanceof Error ? e.name : "";
+      if (name === "AbortError") return "aborted";
+      return "unavailable";
+    }
+  }
+
   private async fallbackCopyInviteText(messageText: string, joinUrl: string, debug: boolean): Promise<void> {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {

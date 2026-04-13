@@ -13,6 +13,8 @@ import storeLogo from "../assets/images/85logo.png";
 import mapLocationLogo from "../assets/images/MapLocationlogo.png";
 import testLogo from "../assets/images/test.png";
 import photoFrameImage from "../assets/images/photoframe.png";
+import downloadIcon from "../assets/images/download.png";
+import shareIcon from "../assets/images/share.png";
 
 type CheckInPhase =
   | "loading"
@@ -41,6 +43,8 @@ const previewUrl = ref("");
 const compositedBlob = ref<Blob | null>(null);
 const compositedPreviewUrl = ref("");
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const isSharing = ref(false);
+const shareErrorMessage = ref("");
 
 const isBusy = computed(() =>
   ["loading", "detecting", "compositing", "uploading"].includes(phase.value),
@@ -135,6 +139,38 @@ function fileFromBlob(blob: Blob, filename: string): File {
   return new File([blob], filename, { type: blob.type || "image/jpeg" });
 }
 
+function triggerDownload(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(objectUrl);
+}
+
+function onDownloadPhoto() {
+  if (!compositedBlob.value) return;
+  triggerDownload(compositedBlob.value, "checkin-framed.jpg");
+}
+
+async function onSharePhoto() {
+  if (!compositedBlob.value || isSharing.value) return;
+  isSharing.value = true;
+  shareErrorMessage.value = "";
+  const file = fileFromBlob(compositedBlob.value, "checkin-framed.jpg");
+  const result = await liffService.shareCheckInPhoto({
+    file,
+    title: "打卡完成",
+  });
+  if (result === "unavailable") {
+    shareErrorMessage.value = "目前裝置不支援直接分享，請先下載圖片後手動分享。";
+  }
+  isSharing.value = false;
+}
+
 async function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -168,13 +204,15 @@ async function compositePhoto(userPhoto: File, frameUrl: string): Promise<Blob> 
     let dy = 0;
 
     if (photoRatio > targetRatio) {
-      drawH = targetH;
-      drawW = targetH * photoRatio;
-      dx = (targetW - drawW) / 2;
-    } else {
+      // contain: 寬圖以寬度對齊，保留完整影像（上下可能留白）
       drawW = targetW;
       drawH = targetW / photoRatio;
       dy = (targetH - drawH) / 2;
+    } else {
+      // contain: 高圖以高度對齊，保留完整影像（左右可能留白）
+      drawH = targetH;
+      drawW = targetH * photoRatio;
+      dx = (targetW - drawW) / 2;
     }
 
     ctx.drawImage(photo, dx, dy, drawW, drawH);
@@ -371,12 +409,35 @@ onBeforeUnmount(() => {
           alt="打卡照片"
           class="mx-auto w-full max-w-[360px] rounded-xl border border-[#ddd]"
         />
+        <div class="mx-auto grid w-full max-w-[360px] grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="flex items-center justify-center gap-1.5 rounded-full bg-[#BCA9D1] px-4 py-2.5 text-[14px] font-bold text-white"
+            :disabled="!compositedBlob"
+            @click="onDownloadPhoto"
+          >
+            <img :src="downloadIcon" alt="" class="h-4 w-4 object-contain" />
+            下載圖片
+          </button>
+          <button
+            type="button"
+            class="flex items-center justify-center gap-1.5 rounded-full bg-[#674598] px-4 py-2.5 text-[14px] font-bold text-white disabled:opacity-50"
+            :disabled="!compositedBlob || isSharing"
+            @click="onSharePhoto"
+          >
+            <img :src="shareIcon" alt="" class="h-4 w-4 object-contain" />
+            {{ isSharing ? "分享中..." : "分享" }}
+          </button>
+        </div>
+        <p v-if="shareErrorMessage" class="text-[12px] text-[#a94442]">
+          {{ shareErrorMessage }}
+        </p>
         <button
           type="button"
-          class="mx-auto block rounded-full bg-[#674598] px-6 py-2.5 text-[15px] font-bold text-white"
-          @click="router.push({ name: 'teamDetail' })"
+          class="mx-auto mt-[28px] block bg-transparent px-2 py-1 text-[18px] font-bold text-[#222] underline"
+          @click="router.push({ name: 'home' })"
         >
-          返回我的隊伍
+          返回首頁
         </button>
       </div>
 
