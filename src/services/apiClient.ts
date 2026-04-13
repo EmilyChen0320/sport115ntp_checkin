@@ -100,6 +100,7 @@ export interface CheckInDetectPointView {
   name: string;
   location: string;
   address: string;
+  imgUrl: string;
   alreadyCheckedByTeam: boolean;
   isTestPoint: boolean;
 }
@@ -182,6 +183,7 @@ function normalizeDetectPoints(result: unknown): CheckInDetectPointView[] {
         name: pickString(row.name),
         location: pickString(row.location),
         address: pickString(row.address),
+        imgUrl: pickString(row.img_url ?? row.imgUrl ?? row.image_url ?? row.imageUrl),
         alreadyCheckedByTeam: pickBoolean(
           row.already_checked_by_team ?? row.is_checked_by_team ?? row.is_checked ?? row.checked,
         ),

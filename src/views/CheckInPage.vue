@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   detectNearbyPoints,
@@ -45,16 +45,37 @@ const compositedPreviewUrl = ref("");
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const isSharing = ref(false);
 const shareErrorMessage = ref("");
+const pointLogoLoadFailed = ref(false);
 
 const isBusy = computed(() =>
   ["loading", "detecting", "compositing", "uploading"].includes(phase.value),
 );
 
-const pointLogo = computed(() => {
+const defaultPointLogo = computed(() => {
   const name = (nearbyPoint.value?.name ?? "").toLowerCase().replace(/\s+/g, "");
   const is85 = name.includes("85度c") || name.includes("85°c") || name.includes("85c");
   return is85 ? storeLogo : testLogo;
 });
+
+const pointLogo = computed(() => {
+  const apiImgUrl = (nearbyPoint.value?.imgUrl ?? "").trim();
+  if (apiImgUrl && !pointLogoLoadFailed.value) return apiImgUrl;
+  return defaultPointLogo.value;
+});
+
+watch(
+  () => nearbyPoint.value?.imgUrl,
+  () => {
+    pointLogoLoadFailed.value = false;
+  },
+);
+
+function onPointLogoError(event: Event) {
+  pointLogoLoadFailed.value = true;
+  const target = event.target as HTMLImageElement | null;
+  if (!target) return;
+  target.src = defaultPointLogo.value as string;
+}
 
 const showGpsAndCamera = computed(() =>
   ["detecting", "no-point", "point-found", "camera", "compositing", "uploading", "upload-failed"].includes(phase.value),
@@ -388,7 +409,12 @@ onBeforeUnmount(() => {
 
       <!-- already-checked -->
       <div v-else-if="phase === 'already-checked'" class="mt-5 space-y-3 rounded-2xl bg-white/90 p-4 py-6 text-center shadow-[0_10px_24px_rgba(0,0,0,0.1)]">
-        <img :src="pointLogo" alt="" class="mx-auto h-[96px] w-[96px] rounded-full object-cover" />
+        <img
+          :src="pointLogo"
+          alt=""
+          class="mx-auto h-[96px] w-[96px] rounded-full object-cover"
+          @error="onPointLogoError"
+        />
         <p class="text-[16px] font-bold">此地點已由隊員完成</p>
         <p class="text-[13px] text-[#666]">{{ nearbyPoint?.name }}</p>
         <button
@@ -494,7 +520,7 @@ onBeforeUnmount(() => {
               <p class="mt-0.5 text-[12px] text-[#666]">{{ nearbyPoint?.address || nearbyPoint?.location }}</p>
               <p class="mt-1 text-[13px] font-bold text-[#27ae60]">✓ 您在打卡範圍內</p>
             </div>
-            <img :src="pointLogo" alt="" class="h-[72px] w-[72px] object-contain" />
+            <img :src="pointLogo" alt="" class="h-[72px] w-[72px] object-contain" @error="onPointLogoError" />
           </div>
         </div>
 
