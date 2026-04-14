@@ -37,6 +37,10 @@ const displayMembers = computed(() => {
 
 const totalSlots = computed(() => (tab.value === "taiwan" ? 22 : 29));
 const doneCount = computed(() => currentEv.value?.completedAreas ?? 0);
+const memberNotCheckedInCount = computed(() => {
+  const members = teamData.value?.members ?? [];
+  return members.filter((m) => (m.checkInCount ?? 0) <= 0).length;
+});
 const progressPct = computed(() => {
   if (!isFullTeam.value || !totalSlots.value) return 0;
   return Math.min(100, Math.round((doneCount.value / totalSlots.value) * 100));
@@ -53,6 +57,9 @@ const statusTitle = computed(() => {
   const unitShort = tab.value === "taiwan" ? "縣市" : "區";
 
   if (ev?.isCompleted) return `已完成 ${n} ${unitShort}，達成抽獎門檻！`;
+  if (n >= totalSlots.value && memberNotCheckedInCount.value > 0) {
+    return `已完成${n}${unitShort}打卡，還需要每個隊員都打卡喔`;
+  }
   const remaining = Math.max(0, threshold - n);
   return `已完成 ${n} ${unitShort}，還差 ${remaining} ${unitLong}達成抽獎門檻！`;
 });
@@ -184,7 +191,7 @@ onMounted(async () => {
 
           <div class="px-4 py-5">
             <div class="mb-4 flex items-center justify-between gap-2">
-              <p class="text-[14px]">{{ statusTitle }}</p>
+              <p class="text-[13px]">{{ statusTitle }}</p>
               <span
                 v-if="showLotteryBadge"
                 class="shrink-0 rounded-full border border-[#ffefc4] bg-[#fbbf24] px-2 py-0.5 text-[10px] font-bold text-white"
