@@ -44,6 +44,7 @@ const leaderName = computed(() => {
 });
 const teamIconUrl = computed(() => {
   return (
+    inviteTeamData.value?.teamIconUrl ??
     members.value.find((m) => m.isCaptain)?.avatarUrl ??
     members.value[0]?.avatarUrl ??
     (avatarFallback as string)
