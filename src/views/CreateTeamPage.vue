@@ -90,6 +90,31 @@ const canSubmit = computed(() => {
   );
 });
 
+const CREATE_TEAM_FALLBACK_ERROR = "建立失敗，請稍後再試。";
+
+function isTechnicalErrorMessage(message: string): boolean {
+  const normalized = message.trim().toLowerCase();
+  if (!normalized) return true;
+  return (
+    normalized.includes("network") ||
+    normalized.includes("token") ||
+    normalized.includes("axios") ||
+    normalized.includes("timeout") ||
+    normalized.includes("http") ||
+    normalized.includes("failed to fetch") ||
+    normalized.includes("ecconn") ||
+    normalized.includes("cors") ||
+    /\b\d{3}\b/.test(normalized)
+  );
+}
+
+function toFriendlyCreateTeamError(message: string): string {
+  const trimmed = message.trim();
+  if (!trimmed) return CREATE_TEAM_FALLBACK_ERROR;
+  if (isTechnicalErrorMessage(trimmed)) return CREATE_TEAM_FALLBACK_ERROR;
+  return trimmed;
+}
+
 function saveDraft() {
   if (typeof sessionStorage === "undefined") return;
   sessionStorage.setItem(
@@ -145,7 +170,7 @@ function onSubmit() {
       router.push(redirectAfterCreate());
     } catch (error) {
       const apiError = error as AxiosError<{ message?: string }>;
-      const message = apiError.response?.data?.message || "";
+      const message = apiError.response?.data?.message ?? "";
       if (
         apiError.response?.status === 422 &&
         (message.includes("已加入其他隊伍") || message.includes("無法創建新隊伍"))
@@ -153,9 +178,7 @@ function onSubmit() {
         router.push(redirectAfterCreate());
         return;
       }
-      submitError.value =
-        message ||
-        `建立隊伍失敗（${apiError.response?.status ?? "network"}），請確認 token、欄位與後端連線。`;
+      submitError.value = toFriendlyCreateTeamError(message);
     } finally {
       isSubmitting.value = false;
     }
