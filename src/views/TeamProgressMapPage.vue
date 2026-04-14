@@ -60,7 +60,7 @@ const statusTitle = computed(() => {
 
   if (isLotteryQualified.value) return `已完成 ${n} ${unitShort}，達成抽獎門檻！`;
   if (n >= threshold.value && memberNotCheckedInCount.value > 0) {
-    return `已完成${n}${unitShort}打卡，還需要每個隊員都打卡`;
+    return `已完成${n}${unitShort}打卡，還需要每個隊員都打卡喔`;
   }
   const remaining = Math.max(0, threshold.value - n);
   return `已完成 ${n} ${unitShort}，還差 ${remaining} ${unitLong}達成抽獎門檻！`;
@@ -193,7 +193,7 @@ onMounted(async () => {
 
           <div class="px-4 py-5">
             <div class="mb-4 flex items-center justify-between gap-2">
-              <p class="text-[13px]">{{ statusTitle }}</p>
+              <p class="text-[12px]">{{ statusTitle }}</p>
               <span
                 v-if="showLotteryBadge"
                 class="shrink-0 rounded-full border border-[#ffefc4] bg-[#fbbf24] px-2 py-0.5 text-[10px] font-bold text-white"
