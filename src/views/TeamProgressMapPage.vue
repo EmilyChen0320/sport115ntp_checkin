@@ -60,7 +60,7 @@ const statusTitle = computed(() => {
 
   if (isLotteryQualified.value) return `已完成 ${n} ${unitShort}，達成抽獎門檻！`;
   if (n >= threshold.value && memberNotCheckedInCount.value > 0) {
-    return `已完成${n}${unitShort}打卡，還需要每個隊員都打卡喔`;
+    return `已完成${n}${unitShort}打卡，還需要每個隊員都打卡`;
   }
   const remaining = Math.max(0, threshold.value - n);
   return `已完成 ${n} ${unitShort}，還差 ${remaining} ${unitLong}達成抽獎門檻！`;
