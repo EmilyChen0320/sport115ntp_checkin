@@ -13,7 +13,6 @@ import storeLogo from "../assets/images/85logo.png";
 import mapLocationLogo from "../assets/images/MapLocationlogo.png";
 import testLogo from "../assets/images/test.png";
 import photoFrameImage from "../assets/images/photoframe.png";
-import downloadIcon from "../assets/images/download.png";
 import shareIcon from "../assets/images/share.png";
 
 type CheckInPhase =
@@ -182,23 +181,6 @@ function replaceCompositedPreview(blob: Blob) {
 
 function fileFromBlob(blob: Blob, filename: string): File {
   return new File([blob], filename, { type: blob.type || "image/jpeg" });
-}
-
-function triggerDownload(blob: Blob, filename: string) {
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = filename;
-  anchor.style.display = "none";
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(objectUrl);
-}
-
-function onDownloadPhoto() {
-  if (!compositedBlob.value) return;
-  triggerDownload(compositedBlob.value, "checkin-framed.jpg");
 }
 
 async function onSharePhoto() {
@@ -463,19 +445,10 @@ onBeforeUnmount(() => {
           alt="打卡照片"
           class="mx-auto w-full max-w-[360px] rounded-xl border border-[#ddd]"
         />
-        <div class="mx-auto grid w-full max-w-[360px] grid-cols-2 gap-2">
+        <div class="mx-auto w-full max-w-[360px]">
           <button
             type="button"
-            class="flex items-center justify-center gap-1.5 rounded-full bg-[#BCA9D1] px-4 py-2.5 text-[14px] font-bold text-white"
-            :disabled="!compositedBlob"
-            @click="onDownloadPhoto"
-          >
-            <img :src="downloadIcon" alt="" class="h-4 w-4 object-contain" />
-            下載圖片
-          </button>
-          <button
-            type="button"
-            class="flex items-center justify-center gap-1.5 rounded-full bg-[#674598] px-4 py-2.5 text-[14px] font-bold text-white disabled:opacity-50"
+            class="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#674598] px-4 py-2.5 text-[14px] font-bold text-white disabled:opacity-50"
             :disabled="!compositedBlob || isSharing"
             @click="onSharePhoto"
           >
