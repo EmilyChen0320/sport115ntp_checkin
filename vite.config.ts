@@ -7,9 +7,19 @@ export default defineConfig(({ command, mode }) => {
   const isBuild = command === "build";
 
   return {
-    base: isBuild ? "/images/sport115ntp/check_in/" : "/",
+    // LIFF requires the current URL to stay under this endpoint path.
+    base: isBuild ? "/liff/check_in/index/" : "/",
     plugins: [vue()],
     publicDir: "public",
+    experimental: {
+      renderBuiltUrl(filename, { type }) {
+        // Keep emitted images at /images/... while app routes stay under /liff/check_in/index/.
+        if (type === "asset" && filename.startsWith("images/sport115ntp/check_in/")) {
+          return `/${filename}`;
+        }
+        return { relative: true };
+      },
+    },
     server: {
       ...(proxyTarget
         ? {
