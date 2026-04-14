@@ -46,6 +46,7 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const isSharing = ref(false);
 const shareErrorMessage = ref("");
 const pointLogoLoadFailed = ref(false);
+const MAX_CHECKIN_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const isBusy = computed(() =>
   ["loading", "detecting", "compositing", "uploading"].includes(phase.value),
@@ -105,16 +106,39 @@ function setPhase(next: CheckInPhase, message = "") {
 function extractApiErrorMessage(error: unknown): string {
   const fallback = "上傳失敗，請稍後再試。";
   const err = error as {
-    response?: { data?: { message?: unknown; result?: { message?: unknown } }; status?: number };
+    response?: { data?: unknown; status?: number };
     message?: unknown;
+    code?: unknown;
   };
+  const status = err?.response?.status;
+  const responseData = err?.response?.data;
+  const responseObj = typeof responseData === "object" && responseData !== null ? (responseData as Record<string, unknown>) : null;
+  const resultObj =
+    responseObj && typeof responseObj.result === "object" && responseObj.result !== null
+      ? (responseObj.result as Record<string, unknown>)
+      : null;
   const dataMessage =
-    (typeof err?.response?.data?.message === "string" && err.response.data.message.trim()) ||
-    (typeof err?.response?.data?.result?.message === "string" && err.response.data.result.message.trim()) ||
+    (typeof responseObj?.message === "string" && responseObj.message.trim()) ||
+    (typeof resultObj?.message === "string" && resultObj.message.trim()) ||
     "";
+  const htmlLikeBody =
+    typeof responseData === "string" &&
+    /<!doctype html|<html|<body|redirect/i.test(responseData);
+  const combinedMessage = `${dataMessage} ${typeof err?.message === "string" ? err.message : ""}`.toLowerCase();
+  const looksLikeSizeIssue = /too large|payload|file size|size limit|10mb|檔案過大|檔案大小|超過|容量/.test(combinedMessage);
+
+  if (status === 413 || ((status === 422 || status === 400) && looksLikeSizeIssue)) {
+    return "照片檔案過大，請選擇 10MB 以下圖片。";
+  }
+  if (status === 302 || htmlLikeBody) {
+    return "上傳失敗，可能是照片檔案過大或登入狀態失效，請改用 10MB 以下圖片後再試。";
+  }
   if (dataMessage) return dataMessage;
   if (typeof err?.message === "string" && err.message.trim()) return err.message;
-  if (err?.response?.status === 409) return "您的隊伍已在此打卡點打過卡";
+  if (status === 409) return "您的隊伍已在此打卡點打過卡";
+  if (err?.code === "ERR_BAD_RESPONSE") {
+    return "上傳失敗，伺服器回應格式異常，請稍後再試。";
+  }
   return fallback;
 }
 
@@ -290,6 +314,10 @@ async function onPhotoSelected(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file) return;
+  if (file.size > MAX_CHECKIN_IMAGE_BYTES) {
+    setPhase("upload-failed", "照片檔案過大，請選擇 10MB 以下圖片。");
+    return;
+  }
   selectedPhotoFile.value = file;
   replacePreview(file);
   try {

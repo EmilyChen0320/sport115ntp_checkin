@@ -217,7 +217,7 @@ export async function submitCheckIn(payload: SubmitCheckInPayload): Promise<unkn
   formData.append("gps_location", payload.gpsLocation);
   formData.append("check_in_picture", payload.checkInPicture, payload.filename ?? "checkin.jpg");
   const { data } = await apiClient.post("/api/check-in", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: { "Content-Type": "multipart/form-data", Accept: "application/json" },
   });
   return data;
 }
