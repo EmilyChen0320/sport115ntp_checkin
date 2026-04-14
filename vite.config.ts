@@ -4,9 +4,10 @@ import vue from "@vitejs/plugin-vue";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const proxyTarget = env.VITE_API_PROXY_TARGET?.trim();
+  const isProduction = mode === "production";
 
   return {
-    base: "/liff/check_in/index/",
+    base: isProduction ? "/images/sport115ntp/check_in/" : "/",
     plugins: [vue()],
     publicDir: "public",
     server: {
