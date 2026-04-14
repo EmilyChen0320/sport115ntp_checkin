@@ -41,6 +41,10 @@ const memberNotCheckedInCount = computed(() => {
   const members = teamData.value?.members ?? [];
   return members.filter((m) => (m.checkInCount ?? 0) <= 0).length;
 });
+const threshold = computed(() => (tab.value === "taiwan" ? 5 : 10));
+const isLotteryQualified = computed(
+  () => isFullTeam.value && doneCount.value >= threshold.value && memberNotCheckedInCount.value === 0,
+);
 const progressPct = computed(() => {
   if (!isFullTeam.value || !totalSlots.value) return 0;
   return Math.min(100, Math.round((doneCount.value / totalSlots.value) * 100));
@@ -48,23 +52,21 @@ const progressPct = computed(() => {
 
 const statusTitle = computed(() => {
   if (!isFullTeam.value) return "尚未成隊";
-  const ev = currentEv.value;
-  const n = ev?.completedAreas ?? 0;
+  const n = doneCount.value;
   // 抽獎門檻：全臺22縣市完成 5 個、 新北市29區完成 10 個
-  // （文案要跟 Figma 一致：未達成時顯示「還差 Y 區/縣市」）
-  const threshold = tab.value === "taiwan" ? 5 : 10;
+
   const unitLong = tab.value === "taiwan" ? "縣市" : "行政區";
   const unitShort = tab.value === "taiwan" ? "縣市" : "區";
 
-  if (ev?.isCompleted) return `已完成 ${n} ${unitShort}，達成抽獎門檻！`;
-  if (n >= totalSlots.value && memberNotCheckedInCount.value > 0) {
+  if (isLotteryQualified.value) return `已完成 ${n} ${unitShort}，達成抽獎門檻！`;
+  if (n >= threshold.value && memberNotCheckedInCount.value > 0) {
     return `已完成${n}${unitShort}打卡，還需要每個隊員都打卡喔`;
   }
-  const remaining = Math.max(0, threshold - n);
+  const remaining = Math.max(0, threshold.value - n);
   return `已完成 ${n} ${unitShort}，還差 ${remaining} ${unitLong}達成抽獎門檻！`;
 });
 
-const showLotteryBadge = computed(() => isFullTeam.value && Boolean(currentEv.value?.isCompleted));
+const showLotteryBadge = computed(() => isLotteryQualified.value);
 const showRelayBadge = computed(() => !showLotteryBadge.value);
 
 const completedForMap = computed(() =>
