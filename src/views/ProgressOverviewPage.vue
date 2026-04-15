@@ -36,6 +36,10 @@ const doneCount = computed(() => currentTeamEv.value?.completedAreas ?? 0);
 const progressPct = computed(() =>
   totalSlots.value ? Math.min(100, Math.round((doneCount.value / totalSlots.value) * 100)) : 0,
 );
+const accentColor = computed(() => (tab.value === "taiwan" ? "#674598" : "#05aac3"));
+const accentBorder = computed(() => (tab.value === "taiwan" ? "#bca9d1" : "#a2d6d5"));
+const accentCardBg = computed(() => (tab.value === "taiwan" ? "rgba(238,234,245,0.5)" : "rgba(226,246,249,0.6)"));
+const accentTrackBg = computed(() => (tab.value === "taiwan" ? "rgba(188,169,209,0.3)" : "rgba(5,170,195,0.22)"));
 
 const completedNames = computed(() =>
   (currentTeamEv.value?.areas ?? []).filter((a) => a.isCompleted).map((a) => a.areaName),
@@ -172,7 +176,9 @@ onMounted(async () => {
               type="button"
               class="flex-1 py-4 text-[15px] font-bold transition-colors"
               :class="
-                tab === 'taiwan' ? 'border-b-2 border-[#674598] text-[#674598]' : 'text-[#a2d6d5]'
+                tab === 'taiwan'
+                  ? 'border-b-2 border-[#674598] text-[#674598] opacity-100'
+                  : 'border-b-2 border-transparent text-[#bca9d1] opacity-70'
               "
               @click="tab = 'taiwan'"
             >
@@ -182,7 +188,9 @@ onMounted(async () => {
               type="button"
               class="flex-1 py-4 text-[15px] font-bold transition-colors"
               :class="
-                tab === 'newtaipei' ? 'border-b-2 border-[#674598] text-[#674598]' : 'text-[#a2d6d5]'
+                tab === 'newtaipei'
+                  ? 'border-b-2 border-[#05aac3] text-[#05aac3] opacity-100'
+                  : 'border-b-2 border-transparent text-[#a2d6d5] opacity-70'
               "
               @click="tab = 'newtaipei'"
             >
@@ -191,15 +199,15 @@ onMounted(async () => {
           </div>
 
           <div class="px-4 py-5">
-            <div class="rounded-xl border border-[#bca9d1] bg-[rgba(238,234,245,0.5)] p-4">
+            <div class="rounded-xl border p-4" :style="{ borderColor: accentBorder, background: accentCardBg }">
               <div class="mb-2 flex items-end justify-between">
                 <p class="text-[15px] font-bold">{{ tab === "taiwan" ? "臺灣22縣市" : "新北市29區" }}</p>
                 <p class="text-[15px] font-bold">{{ doneCount }}/{{ totalSlots }}</p>
               </div>
-              <div class="h-2 overflow-hidden rounded-full bg-[rgba(188,169,209,0.3)]">
+              <div class="h-2 overflow-hidden rounded-full" :style="{ background: accentTrackBg }">
                 <div
-                  class="h-full rounded-full bg-[#674598] transition-[width]"
-                  :style="{ width: `${progressPct}%` }"
+                  class="h-full rounded-full transition-[width]"
+                  :style="{ width: `${progressPct}%`, background: accentColor }"
                 ></div>
               </div>
               <p class="mt-2 line-clamp-2 text-[12px] text-[#333333b3]">{{ completedSummaryText }}</p>
@@ -220,10 +228,10 @@ onMounted(async () => {
                 >
                   <p class="w-[52px] shrink-0 text-[15px] text-[#333333b3]">{{ row.areaName }}</p>
                   <div class="min-w-0 flex-1">
-                    <div class="h-[6px] overflow-hidden rounded-full bg-[rgba(188,169,209,0.2)]">
+                    <div class="h-[6px] overflow-hidden rounded-full" :style="{ background: accentTrackBg }">
                       <div
-                        class="h-full rounded-full bg-[#674598]"
-                        :style="{ width: `${barPct(row.completedTeams)}%` }"
+                        class="h-full rounded-full"
+                        :style="{ width: `${barPct(row.completedTeams)}%`, background: accentColor }"
                       ></div>
                     </div>
                   </div>

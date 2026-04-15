@@ -39,6 +39,11 @@ const totalSlots = computed(() => (tab.value === "taiwan" ? 22 : 29));
 const doneCount = computed(() => currentEv.value?.completedAreas ?? 0);
 const memberNotCheckedInCount = computed(() => {
   const members = teamData.value?.members ?? [];
+  if (tab.value === "newtaipei") {
+    return members.filter(
+      (m) => !m.checkInPoints.some((p) => /新北/.test(p.address)),
+    ).length;
+  }
   return members.filter((m) => (m.checkInCount ?? 0) <= 0).length;
 });
 const threshold = computed(() => (tab.value === "taiwan" ? 5 : 10));
@@ -49,6 +54,9 @@ const progressPct = computed(() => {
   if (!isFullTeam.value || !totalSlots.value) return 0;
   return Math.min(100, Math.round((doneCount.value / totalSlots.value) * 100));
 });
+const accentColor = computed(() => (tab.value === "taiwan" ? "#674598" : "#05aac3"));
+const accentBgLight = computed(() => (tab.value === "taiwan" ? "rgba(188,169,209,0.1)" : "rgba(5,170,195,0.1)"));
+const accentTrackBg = computed(() => (tab.value === "taiwan" ? "rgba(188,169,209,0.2)" : "rgba(5,170,195,0.15)"));
 
 const statusTitle = computed(() => {
   if (!isFullTeam.value) return "尚未成隊";
@@ -175,16 +183,16 @@ onMounted(async () => {
           <div class="flex border-b border-[#e2e8f0]">
             <button
               type="button"
-              class="flex-1 py-4 text-[15px] font-bold text-[#674598] transition-opacity hover:opacity-80"
-              :class="tab === 'taiwan' ? 'border-b-2 border-[#674598]' : 'border-b-2 border-transparent'"
+              class="flex-1 py-4 text-[15px] font-bold text-[#674598] transition-opacity"
+              :class="tab === 'taiwan' ? 'border-b-2 border-[#674598] opacity-100' : 'border-b-2 border-transparent opacity-70'"
               @click="tab = 'taiwan'"
             >
               全臺22縣市
             </button>
             <button
               type="button"
-              class="flex-1 py-4 text-[15px] font-bold text-[#05aac3] transition-opacity hover:opacity-80"
-              :class="tab === 'newtaipei' ? 'border-b-2 border-[#05aac3]' : 'border-b-2 border-transparent'"
+              class="flex-1 py-4 text-[15px] font-bold text-[#05aac3] transition-opacity"
+              :class="tab === 'newtaipei' ? 'border-b-2 border-[#05aac3] opacity-100' : 'border-b-2 border-transparent opacity-70'"
               @click="tab = 'newtaipei'"
             >
               新北市29區
@@ -207,15 +215,16 @@ onMounted(async () => {
                 聖火傳遞ing
               </span>
             </div>
-            <div class="h-[10px] overflow-hidden rounded-full bg-[rgba(188,169,209,0.2)]">
+            <div class="h-[10px] overflow-hidden rounded-full" :style="{ background: accentTrackBg }">
               <div
-                class="h-full rounded-full bg-[#674598] transition-[width]"
-                :style="{ width: `${progressPct}%` }"
+                class="h-full rounded-full transition-[width]"
+                :style="{ width: `${progressPct}%`, background: accentColor }"
               ></div>
             </div>
 
             <div
-              class="mt-4 rounded-[10px] border border-[#ededed] bg-[rgba(188,169,209,0.1)] p-2 shadow-[0px_0px_1px_rgba(0,0,0,0.15)]"
+              class="mt-4 rounded-[10px] border border-[#ededed] p-2 shadow-[0px_0px_1px_rgba(0,0,0,0.15)]"
+              :style="{ background: accentBgLight }"
             >
               <div
                 class="flex min-h-[300px] w-full items-center justify-center px-1 py-1 sm:min-h-[360px]"
