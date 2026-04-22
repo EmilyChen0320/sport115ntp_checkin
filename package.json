@@ -1,7 +1,7 @@
 {
   "name": "sport115ntp_checkin",
   "version": "1.0.0",
-  "description": "LIFF 全障運傳聖火打卡第一階段骨架",
+  "description": "LIFF 115年全障運|LINE傳聖火抽黃金第一階段骨架",
   "private": true,
   "type": "module",
   "scripts": {
