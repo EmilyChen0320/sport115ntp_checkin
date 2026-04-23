@@ -353,11 +353,15 @@ watch(
 
       <button
         type="button"
-        class="mt-6 block w-full rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2"
+        class="mt-6 block w-full rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#674598] focus-visible:ring-offset-2 disabled:opacity-60"
         :disabled="!canSubmit || isSubmitting"
         @click="onSubmit"
       >
+        <span v-if="isSubmitting" class="flex w-full items-center justify-center rounded-full bg-[#674598] py-3 text-[16px] font-bold text-white">
+          建立中，請稍候...
+        </span>
         <img
+          v-else
           :src="canSubmit ? createGroupEnabledImage : createGroupDisabledImage"
           alt="建立隊伍"
           class="block h-auto w-full"

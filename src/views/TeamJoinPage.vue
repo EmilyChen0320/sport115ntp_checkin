@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import type { AxiosError } from "axios";
 import { useRoute, useRouter } from "vue-router";
-import { getTeamProgress, joinTeam } from "../services/apiClient";
+import { getTeamProgress, joinTeam, recordInvite } from "../services/apiClient";
 import { liffService } from "../services/liffService";
 import joinTeamHero from "../assets/images/join-team.png";
 import teamInviteBg from "../assets/images/teaminvitebg.png";
@@ -77,6 +77,17 @@ async function loadInvitePage() {
     await liffService.ensureLogin();
     const lineUserId = await liffService.getUserId();
     selfLineUserId.value = lineUserId;
+
+    // 先記錄邀請意圖，避免使用者被導向加好友流程後遺失邀請參數
+    try {
+      await recordInvite({
+        line_user_id: lineUserId,
+        team_id: teamId.value,
+        inviter_id: inviterId.value,
+      });
+    } catch {
+      // 紀錄失敗不阻擋後續流程
+    }
 
     const selfTeam = await getTeamProgress(lineUserId);
     if (selfTeam) {

@@ -250,3 +250,17 @@ export async function joinTeam(payload: JoinTeamPayload): Promise<unknown> {
   });
   return data;
 }
+
+export interface RecordInvitePayload {
+  line_user_id: string;
+  team_id: string;
+  inviter_id: string;
+}
+
+/** POST /api/check-in/invite-record — 記錄邀請意圖，需在使用者可能被導離頁面前呼叫 */
+export async function recordInvite(payload: RecordInvitePayload): Promise<unknown> {
+  const { data } = await apiClient.post("/api/check-in/invite-record", payload, {
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+  });
+  return data;
+}
