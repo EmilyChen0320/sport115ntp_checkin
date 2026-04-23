@@ -299,7 +299,7 @@ class LiffService {
       : "";
 
     /** 不含網址：給 Web Share 用，避免 text 與 url 重複顯示同一連結 */
-    const inviteLinesOnly = `【${options.teamName}】邀請你加入隊伍\n${memberLabel}`;
+    const inviteLinesOnly = `115年全障運在新北|LINE傳聖火抽黃金\n【${options.teamName}】邀請你加入隊伍\n${memberLabel}`;
     const messageText = joinUrl ? `${inviteLinesOnly}\n加入連結：${joinUrl}` : inviteLinesOnly;
 
     let inLineClient = false;
