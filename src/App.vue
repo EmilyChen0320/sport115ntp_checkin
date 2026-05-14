@@ -3,11 +3,61 @@ import { onMounted, ref } from "vue";
 import { RouterView } from "vue-router";
 import { getEndpointConfig } from "./config/endpoint";
 import { liffService } from "./services/liffService";
+import { recordInvite } from "./services/apiClient";
 
 const endpoint = getEndpointConfig();
 const isFriend = ref(true);
 const addFriendUrl = ref("");
 const checking = ref(true);
+
+function parseInviteParamsFromUrl(): { teamId: string; inviterId: string } | null {
+  try {
+    const search = location.search || location.hash.replace(/^#/, "?");
+    const urlParams = new URLSearchParams(search);
+    const liffState = urlParams.get("liff.state");
+
+    let teamId = "";
+    let inviterId = "";
+
+    if (liffState) {
+      const decoded = decodeURIComponent(liffState);
+      if (decoded.startsWith("/")) {
+        const [, qs = ""] = decoded.split("?");
+        const p = new URLSearchParams(qs);
+        teamId = p.get("team_id")?.trim() ?? "";
+        inviterId = p.get("inviter_id")?.trim() ?? "";
+      } else {
+        const qs = decoded.startsWith("?") ? decoded.slice(1) : decoded;
+        const p = new URLSearchParams(qs);
+        teamId = p.get("team_id")?.trim() ?? "";
+        inviterId = p.get("inviter_id")?.trim() ?? "";
+      }
+    } else {
+      teamId = urlParams.get("team_id")?.trim() ?? "";
+      inviterId = urlParams.get("inviter_id")?.trim() ?? "";
+    }
+
+    return teamId && inviterId ? { teamId, inviterId } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function tryRecordInvite(): Promise<void> {
+  try {
+    const params = parseInviteParamsFromUrl();
+    if (!params) return;
+
+    const userId = await liffService.getUserId();
+    await recordInvite({
+      line_user_id: userId,
+      team_id: params.teamId,
+      inviter_id: params.inviterId,
+    });
+  } catch (e) {
+    if (endpoint.debug) console.error("[tryRecordInvite]", e);
+  }
+}
 
 async function checkAndSetFriendship() {
   const result = await liffService.checkFriendship();
@@ -31,6 +81,7 @@ async function recheckFriendship() {
 onMounted(async () => {
   try {
     await liffService.ensureLogin();
+    await tryRecordInvite();
     await checkAndSetFriendship();
   } catch (error) {
     if (endpoint.debug) {
